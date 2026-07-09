@@ -1,0 +1,12 @@
+<main>
+  <h1>{{ title }}</h1>
+  <p>{{ description }}</p>
+  {{#if message}}
+    <p class="notice">{{ message }}</p>
+  {{/if}}
+  <form method="post" action="?/submit">
+    <input name="answer" placeholder="Your answer">
+    <button>Submit</button>
+  </form>
+  <a href="/exercises">Back</a>
+</main>

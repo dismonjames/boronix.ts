@@ -1,0 +1,13 @@
+{
+  "name": "kumquat-basic-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "kumquat dev",
+    "build": "kumquat build",
+    "start": "kumquat start"
+  },
+  "dependencies": {
+    "kumquat": "workspace:*"
+  }
+}

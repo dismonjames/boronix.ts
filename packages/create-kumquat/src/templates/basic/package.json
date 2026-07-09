@@ -1,0 +1,13 @@
+{
+  "name": "my-kumquat-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "kumquat dev",
+    "build": "kumquat build",
+    "start": "kumquat start"
+  },
+  "dependencies": {
+    "kumquat": "^0.1.0"
+  }
+}
