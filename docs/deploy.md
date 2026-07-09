@@ -1,15 +1,15 @@
 # Deploy
 
-Kumquat writes `.kumquat/manifest.json` with:
+Goros writes `.goros/manifest.json` with:
 
 ```bash
-kumquat build
+goros build
 ```
 
 Start production mode with:
 
 ```bash
-kumquat start
+goros start
 ```
 
 Production bundling and non-Bun adapters are intentionally deferred.
@@ -17,6 +17,6 @@ Production bundling and non-Bun adapters are intentionally deferred.
 Node runtime can be selected with:
 
 ```bash
-kumquat build --runtime node
-kumquat start --runtime node
+goros build --runtime node
+goros start --runtime node
 ```

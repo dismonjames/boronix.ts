@@ -5,7 +5,7 @@ The `inspect` command resolves a specific request URL route, extracting matched 
 ## Usage
 
 ```bash
-kumquat inspect <pathname> [options]
+goros inspect <pathname> [options]
 ```
 
 ## Example Output
@@ -13,7 +13,7 @@ kumquat inspect <pathname> [options]
 ### Matching Dynamic Route
 
 ```txt
-◆ Kumquat inspect
+◆ Goros inspect
 
   ◆ /exercises/12
   │
@@ -35,10 +35,10 @@ kumquat inspect <pathname> [options]
 ### Non-matching Route
 
 ```txt
-✖ Kumquat error KQ_ROUTE_NOT_FOUND
+✖ Goros error KQ_ROUTE_NOT_FOUND
 
 No route matched `/missing`.
 
 Hint:
-  Run `kumquat routes` to see available routes.
+  Run `goros routes` to see available routes.
 ```

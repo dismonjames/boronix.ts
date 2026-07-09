@@ -1,13 +1,13 @@
 {
-  "name": "kumquat-basic-example",
+  "name": "goros-basic-example",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "kumquat dev",
-    "build": "kumquat build",
-    "start": "kumquat start"
+    "dev": "goros dev",
+    "build": "goros build",
+    "start": "goros start"
   },
   "dependencies": {
-    "kumquat": "workspace:*"
+    "goros": "workspace:*"
   }
 }

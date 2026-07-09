@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync, rmSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
 
-const mainCliPath = path.resolve("packages/kumquat/src/cli/main.ts")
+const mainCliPath = path.resolve("packages/goros/src/cli/main.ts")
 
 test("build command prints build tree", () => {
   const result = Bun.spawnSync({
@@ -23,12 +23,12 @@ test("build command prints build tree", () => {
 })
 
 test("build command flags invalid page loader", () => {
-  const tempDir = path.join(os.tmpdir(), `kumquat-build-fail-${Date.now()}`)
+  const tempDir = path.join(os.tmpdir(), `goros-build-fail-${Date.now()}`)
   
   try {
     mkdirSync(tempDir, { recursive: true })
     writeFileSync(path.join(tempDir, "package.json"), "{}", "utf8")
-    writeFileSync(path.join(tempDir, "kumquat.config.ts"), 'export default { runtime: "bun" };', "utf8")
+    writeFileSync(path.join(tempDir, "goros.config.ts"), 'export default { runtime: "bun" };', "utf8")
     
     // Create routes capsules
     mkdirSync(path.join(tempDir, "app/routes/home"), { recursive: true })

@@ -1,4 +1,4 @@
-import { action, fail } from "kumquat"
+import { action, fail } from "goros"
 
 export const submit = action(async ({ form }) => {
   const answer = form.string("answer")

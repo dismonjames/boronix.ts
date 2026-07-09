@@ -11,7 +11,7 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "paths": {
-      "kumquat": ["./packages/kumquat/src/index.ts"]
+      "goros": ["./packages/goros/src/index.ts"]
     }
   }
 }

@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
-import { createAuth, AuthRequiredError } from "../packages/kumquat/src/core/auth"
-import { createSession } from "../packages/kumquat/src/core/session"
-import { defaultConfig } from "../packages/kumquat/src/config/types"
+import { createAuth, AuthRequiredError } from "../packages/goros/src/core/auth"
+import { createSession } from "../packages/goros/src/core/session"
+import { defaultConfig } from "../packages/goros/src/config/types"
 
 const sessionConfig = {
   ...defaultConfig.session,

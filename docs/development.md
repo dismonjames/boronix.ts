@@ -14,13 +14,13 @@ Dogfood examples:
 ```bash
 bun run dev:basic
 bun run dev:homework
-bun run packages/kumquat/src/cli/main.ts dev --runtime node --root examples/homework
+bun run packages/goros/src/cli/main.ts dev --runtime node --root examples/homework
 ```
 
 Local package test:
 
 ```bash
-cd packages/kumquat
+cd packages/goros
 bun run build
 bun pm pack
 ```
@@ -28,7 +28,7 @@ bun pm pack
 Install the generated `.tgz` in a temporary app and run:
 
 ```bash
-bunx kumquat dev
+bunx goros dev
 curl http://localhost:3000/
 ```
 

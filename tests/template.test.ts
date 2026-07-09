@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { renderTemplate } from "../packages/kumquat/src/render/template"
+import { renderTemplate } from "../packages/goros/src/render/template"
 
 test("renders variables", () => {
   expect(renderTemplate("<h1>{{ title }}</h1>", { title: "Hello" })).toBe("<h1>Hello</h1>")

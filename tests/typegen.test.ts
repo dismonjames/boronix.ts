@@ -3,15 +3,15 @@ import { mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from "node
 import os from "node:os"
 import path from "node:path"
 
-const mainCliPath = path.resolve("packages/kumquat/src/cli/main.ts")
+const mainCliPath = path.resolve("packages/goros/src/cli/main.ts")
 
 test("typegen command generates route types file", () => {
-  const tempDir = path.join(os.tmpdir(), `kumquat-typegen-${Date.now()}`)
+  const tempDir = path.join(os.tmpdir(), `goros-typegen-${Date.now()}`)
   
   try {
     mkdirSync(tempDir, { recursive: true })
     writeFileSync(path.join(tempDir, "package.json"), "{}", "utf8")
-    writeFileSync(path.join(tempDir, "kumquat.config.ts"), 'export default { runtime: "bun" };', "utf8")
+    writeFileSync(path.join(tempDir, "goros.config.ts"), 'export default { runtime: "bun" };', "utf8")
     
     // Create routes capsules
     mkdirSync(path.join(tempDir, "app/routes/home"), { recursive: true })
@@ -36,7 +36,7 @@ test("typegen command generates route types file", () => {
 
     expect(result.exitCode).toBe(0)
     
-    const typesFile = path.join(tempDir, ".kumquat/types/routes.d.ts")
+    const typesFile = path.join(tempDir, ".goros/types/routes.d.ts")
     expect(existsSync(typesFile)).toBe(true)
 
     const content = readFileSync(typesFile, "utf8")

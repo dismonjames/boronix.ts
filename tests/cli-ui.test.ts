@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
-import { formatRoutesSummary, type CliRouteEntry } from "../packages/kumquat/src/cli/ui/table"
-import { initUiSettings, areColorsEnabled } from "../packages/kumquat/src/cli/ui/terminal"
+import { formatRoutesSummary, type CliRouteEntry } from "../packages/goros/src/cli/ui/table"
+import { initUiSettings, areColorsEnabled } from "../packages/goros/src/cli/ui/terminal"
 
 const mockRoutes: CliRouteEntry[] = [
   { symbol: "page", method: "GET", path: "/login", type: "page", source: "app/routes/login/page.html" }

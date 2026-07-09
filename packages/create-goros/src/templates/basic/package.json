@@ -1,0 +1,13 @@
+{
+  "name": "my-goros-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "goros dev",
+    "build": "goros build",
+    "start": "goros start"
+  },
+  "dependencies": {
+    "goros": "^0.2.5"
+  }
+}

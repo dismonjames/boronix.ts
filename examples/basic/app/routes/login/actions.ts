@@ -1,4 +1,4 @@
-import { action, fail, redirect } from "kumquat"
+import { action, fail, redirect } from "goros"
 
 export const login = action(async ({ form }) => {
   const email = form.string("email")

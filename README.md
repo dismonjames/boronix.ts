@@ -1,19 +1,20 @@
-# Kumquat.ts
+# Goros
 
-Kumquat.ts is an experimental HTML-first fullstack framework for TypeScript.
+Goros is an experimental HTML-first fullstack framework for TypeScript.
 
 It is server-first, SSR-first, and uses real HTML templates. Client JavaScript is not automatic, React is not part of the framework, and Bun is the first runtime target.
 
-Kumquat is dogfooded through a small homework app using login, dashboard-style HTML pages, local actions, and JSON APIs.
+Goros is dogfooded through a small homework app using login, dashboard-style HTML pages, local actions, and JSON APIs.
 
-v0.2 adds nested layouts, signed cookie sessions, minimal auth helpers, flash messages, form validation helpers, and a Node runtime adapter.
+> [!IMPORTANT]
+> Goros is in early alpha. APIs may change before 1.0. Registry publishing is planned after package smoke tests pass. Goros is not published to npm yet. For now, install from a local tarball or GitHub source.
 
 ## Install
 
 For a new app:
 
 ```bash
-bunx create-kumquat my-app
+bunx create-goros my-app
 cd my-app
 bun install
 bun run dev
@@ -22,13 +23,13 @@ bun run dev
 For an existing app:
 
 ```bash
-bun add kumquat
+bun add goros
 ```
 
 ## Create App
 
 ```bash
-bunx create-kumquat my-app
+bunx create-goros my-app
 cd my-app
 bun install
 bun run dev
@@ -39,10 +40,10 @@ The generated app includes:
 ```json
 {
   "scripts": {
-    "dev": "kumquat dev",
-    "build": "kumquat build",
-    "start": "kumquat start",
-    "doctor": "kumquat doctor"
+    "dev": "goros dev",
+    "build": "goros build",
+    "start": "goros start",
+    "doctor": "goros doctor"
   }
 }
 ```
@@ -50,20 +51,20 @@ The generated app includes:
 ## Commands
 
 ```bash
-kumquat dev       # Start development server
-kumquat build     # Build production manifest
-kumquat start     # Start production server
-kumquat info      # Print environment information
-kumquat doctor    # Check project health
-kumquat typegen   # Generate route types
-kumquat routes    # List all project routes as a tree
-kumquat inspect   # Inspect matched files for a specific route
+goros dev       # Start development server
+goros build     # Build production manifest
+goros start     # Start production server
+goros info      # Print environment information
+goros doctor    # Check project health
+goros typegen   # Generate route types
+goros routes    # List all project routes as a tree
+goros inspect   # Inspect matched files for a specific route
 ```
 
 ### CLI Dev Preview
 
 ```txt
-◆ Kumquat.ts
+◆ Goros
 
   ✔ mode      dev
   ✔ runtime   bun
@@ -76,11 +77,11 @@ kumquat inspect   # Inspect matched files for a specific route
 ### CLI Build Tree Preview
 
 ```txt
-◆ Kumquat.ts
+◆ Goros
 
   ✔ mode      build
   ✔ runtime   bun
-  ◇ output    .kumquat
+  ◇ output    .goros
 
   app/routes
   │
@@ -94,9 +95,9 @@ kumquat inspect   # Inspect matched files for a specific route
 Use Node runtime when needed:
 
 ```bash
-kumquat dev --runtime node
-kumquat build --runtime node
-kumquat start --runtime node
+goros dev --runtime node
+goros build --runtime node
+goros start --runtime node
 ```
 
 ## Run The Example
@@ -125,7 +126,7 @@ app/
   shared/
   layout.html
 public/
-kumquat.config.ts
+goros.config.ts
 ```
 
 ## Runtime
@@ -133,19 +134,19 @@ kumquat.config.ts
 Bun is the primary runtime. Node has a basic adapter in v0.2.
 
 ```ts
-import { defineConfig } from "kumquat"
+import { defineConfig } from "goros"
 
 export default defineConfig({
   runtime: "bun"
 })
 ```
 
-Kumquat is still alpha software. Expect small breaking fixes before a stable release.
+Goros is still alpha software. Expect small breaking fixes before a stable release.
 
 ## Page
 
 ```ts
-import { page } from "kumquat"
+import { page } from "goros"
 
 export default page(async () => {
   return { title: "Dashboard" }
@@ -159,7 +160,7 @@ export default page(async () => {
 ## API
 
 ```ts
-import { api, json } from "kumquat"
+import { api, json } from "goros"
 
 export const GET = api(async () => {
   return json({ ok: true })
@@ -169,7 +170,7 @@ export const GET = api(async () => {
 ## Action
 
 ```ts
-import { action, fail, redirect } from "kumquat"
+import { action, fail, redirect } from "goros"
 
 export const login = action(async ({ form }) => {
   const email = form.string("email")

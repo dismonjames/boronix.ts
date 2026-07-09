@@ -1,0 +1,14 @@
+{
+  "name": "goros-homework-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "goros dev",
+    "dev:node": "goros dev --runtime node",
+    "build": "goros build",
+    "start": "goros start"
+  },
+  "dependencies": {
+    "goros": "^0.2.5"
+  }
+}

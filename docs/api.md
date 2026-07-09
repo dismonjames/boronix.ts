@@ -3,7 +3,7 @@
 `api.ts` creates a JSON API route under `/api`.
 
 ```ts
-import { api, json } from "kumquat"
+import { api, json } from "goros"
 
 export const GET = api(async () => {
   return json({ ok: true })

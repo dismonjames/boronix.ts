@@ -1,5 +1,5 @@
 {
-  "name": "kumquat-workspace",
+  "name": "goros-workspace",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -10,9 +10,13 @@
     "build": "bun run scripts/build.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
-    "dev:basic": "bun run packages/kumquat/src/cli/main.ts dev --root examples/basic",
-    "start:basic": "bun run packages/kumquat/src/cli/main.ts start --root examples/basic",
-    "dev:homework": "bun run packages/kumquat/src/cli/main.ts dev --root examples/homework"
+    "pack:goros": "cd packages/goros && bun pm pack",
+    "pack:create": "cd packages/create-goros && bun pm pack",
+    "release:check": "bun run scripts/release-check.ts",
+    "smoke:pack": "bun run scripts/smoke-pack.ts",
+    "dev:basic": "bun run packages/goros/src/cli/main.ts dev --root examples/basic",
+    "start:basic": "bun run packages/goros/src/cli/main.ts start --root examples/basic",
+    "dev:homework": "bun run packages/goros/src/cli/main.ts dev --root examples/homework"
   },
   "devDependencies": {
     "@types/bun": "latest",

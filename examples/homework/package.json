@@ -1,14 +1,14 @@
 {
-  "name": "kumquat-homework-example",
+  "name": "goros-homework-example",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "kumquat dev",
-    "dev:node": "kumquat dev --runtime node",
-    "build": "kumquat build",
-    "start": "kumquat start"
+    "dev": "goros dev",
+    "dev:node": "goros dev --runtime node",
+    "build": "goros build",
+    "start": "goros start"
   },
   "dependencies": {
-    "kumquat": "workspace:*"
+    "goros": "workspace:*"
   }
 }

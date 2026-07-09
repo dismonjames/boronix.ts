@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
-import { createFlash } from "../packages/kumquat/src/core/flash"
-import { createSession } from "../packages/kumquat/src/core/session"
-import { defaultConfig } from "../packages/kumquat/src/config/types"
+import { createFlash } from "../packages/goros/src/core/flash"
+import { createSession } from "../packages/goros/src/core/session"
+import { defaultConfig } from "../packages/goros/src/config/types"
 
 const sessionConfig = {
   ...defaultConfig.session,

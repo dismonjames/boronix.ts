@@ -1,16 +1,16 @@
-# Kumquat Typegen
+# Goros Typegen
 
 The `typegen` command scans your routes capsules and automatically generates TypeScript types for your pages, API endpoints, and action form paths.
 
 ## Usage
 
 ```bash
-kumquat typegen [options]
+goros typegen [options]
 ```
 
 ## Generated Outputs
 
-Generates `.kumquat/types/routes.d.ts` containing:
+Generates `.goros/types/routes.d.ts` containing:
 
 - `PageRoute`: A union of all static and template literal dynamic page routes.
 - `ApiRoute`: A union of all `/api` endpoint routes.

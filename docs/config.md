@@ -1,9 +1,9 @@
 # Config
 
-`kumquat.config.ts` is the only config file.
+`goros.config.ts` is the only config file.
 
 ```ts
-import { defineConfig } from "kumquat"
+import { defineConfig } from "goros"
 
 export default defineConfig({
   runtime: "bun",

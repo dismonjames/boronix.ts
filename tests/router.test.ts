@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
-import { matchPath, matchRoute } from "../packages/kumquat/src/core/router"
-import type { RouteManifest } from "../packages/kumquat/src/scanner/route-manifest"
+import { matchPath, matchRoute } from "../packages/goros/src/core/router"
+import type { RouteManifest } from "../packages/goros/src/scanner/route-manifest"
 
 test("matches static routes", () => {
   expect(matchPath("/login", "/login")).toEqual({})

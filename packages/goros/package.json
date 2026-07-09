@@ -1,0 +1,43 @@
+{
+  "name": "goros",
+  "version": "0.2.5",
+  "description": "HTML-first fullstack framework for TypeScript.",
+  "type": "module",
+  "license": "MPL-2.0",
+  "bin": {
+    "goros": "dist/cli/main.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "goros",
+    "typescript",
+    "framework",
+    "fullstack",
+    "html",
+    "ssr",
+    "web-framework"
+  ],
+  "homepage": "https://github.com/dismonjames/goros.ts#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/dismonjames/goros.ts.git",
+    "directory": "packages/goros"
+  },
+  "bugs": {
+    "url": "https://github.com/dismonjames/goros.ts/issues"
+  },
+  "scripts": {
+    "build": "rm -rf ./dist && bun build ./src/index.ts ./src/cli/main.ts --outdir ./dist --target bun && tsc -p tsconfig.json --emitDeclarationOnly",
+    "typecheck": "tsc --noEmit"
+  }
+}

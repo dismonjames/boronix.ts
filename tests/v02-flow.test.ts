@@ -3,15 +3,15 @@ import os from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { expect, test } from "bun:test"
-import { createKumquatApp } from "../packages/kumquat/src/core/app"
-import { defaultConfig } from "../packages/kumquat/src/config/types"
-import { scanRoutes } from "../packages/kumquat/src/scanner/scan-routes"
+import { createGorosApp } from "../packages/goros/src/core/app"
+import { defaultConfig } from "../packages/goros/src/config/types"
+import { scanRoutes } from "../packages/goros/src/scanner/scan-routes"
 
 test("v0.2 auth validation fail and flash flow", async () => {
-  const root = path.join(os.tmpdir(), `kumquat-v02-${Date.now()}`)
+  const root = path.join(os.tmpdir(), `goros-v02-${Date.now()}`)
   const appRoot = path.join(root, "app")
   const routes = path.join(appRoot, "routes")
-  const kumquatImport = pathToFileURL(path.resolve("packages/kumquat/src/index.ts")).href
+  const kumquatImport = pathToFileURL(path.resolve("packages/goros/src/index.ts")).href
 
   mkdirSync(path.join(routes, "login"), { recursive: true })
   mkdirSync(path.join(routes, "dashboard"), { recursive: true })
@@ -45,7 +45,7 @@ export const login = action(async ({ form, auth, flash }) => {
 })`)
 
   const manifest = scanRoutes(routes)
-  const app = createKumquatApp({
+  const app = createGorosApp({
     root,
     config: {
       ...defaultConfig,

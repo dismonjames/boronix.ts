@@ -2,10 +2,10 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { expect, test } from "bun:test"
-import { scanRoutes } from "../packages/kumquat/src/scanner/scan-routes"
+import { scanRoutes } from "../packages/goros/src/scanner/scan-routes"
 
 test("scans route capsules", () => {
-  const root = path.join(os.tmpdir(), `kumquat-scanner-${Date.now()}`)
+  const root = path.join(os.tmpdir(), `goros-scanner-${Date.now()}`)
   const routes = path.join(root, "app", "routes")
 
   mkdirSync(path.join(routes, "home"), { recursive: true })

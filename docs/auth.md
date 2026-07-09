@@ -17,4 +17,4 @@ auth.user()
 auth.requireUser()
 ```
 
-Kumquat does not include providers, password hashing, or databases in v0.2.
+Goros does not include providers, password hashing, or databases in v0.2.

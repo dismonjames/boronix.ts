@@ -1,0 +1,36 @@
+{
+  "name": "create-goros",
+  "version": "0.2.5",
+  "description": "Create a new Goros app.",
+  "type": "module",
+  "license": "MPL-2.0",
+  "bin": {
+    "create-goros": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "src/templates",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "goros",
+    "typescript",
+    "create",
+    "scaffold",
+    "starter"
+  ],
+  "homepage": "https://github.com/dismonjames/goros.ts#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/dismonjames/goros.ts.git",
+    "directory": "packages/create-goros"
+  },
+  "bugs": {
+    "url": "https://github.com/dismonjames/goros.ts/issues"
+  },
+  "scripts": {
+    "build": "rm -rf ./dist && bun build ./src/index.ts --outdir ./dist --target bun && tsc -p tsconfig.json --emitDeclarationOnly",
+    "typecheck": "tsc --noEmit"
+  }
+}

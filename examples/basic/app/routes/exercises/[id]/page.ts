@@ -1,4 +1,4 @@
-import { notFound, page } from "kumquat"
+import { notFound, page } from "goros"
 import { findExercise } from "../../../server/exercises"
 
 export default page(async ({ params }) => {

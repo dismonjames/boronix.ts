@@ -1,4 +1,4 @@
-import { page } from "kumquat"
+import { page } from "goros"
 import { exercises } from "../../server/exercises"
 
 export default page(async () => {

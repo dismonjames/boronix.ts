@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import path from "node:path"
 
-const mainCliPath = path.resolve("packages/kumquat/src/cli/main.ts")
+const mainCliPath = path.resolve("packages/goros/src/cli/main.ts")
 
 test("routes command prints tree by default", () => {
   const result = Bun.spawnSync({

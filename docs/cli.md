@@ -1,11 +1,11 @@
-# Kumquat.ts CLI Reference
+# Goros CLI Reference
 
-The Kumquat.ts command-line interface provides tools for development, building, and inspecting your fullstack applications.
+The Goros command-line interface provides tools for development, building, and inspecting your fullstack applications.
 
 ## Usage
 
 ```bash
-kumquat <command> [options]
+goros <command> [options]
 ```
 
 ## Commands
@@ -14,7 +14,7 @@ kumquat <command> [options]
 Start the development server with live request activity logging.
 
 ```bash
-kumquat dev [options]
+goros dev [options]
 ```
 
 **Options:**
@@ -29,10 +29,10 @@ kumquat dev [options]
 - `--no-color`: Disable terminal colors
 
 ### `build`
-Compile your server-rendered app and generate a production manifest in `.kumquat`, rendering a route build tree.
+Compile your server-rendered app and generate a production manifest in `.goros`, rendering a route build tree.
 
 ```bash
-kumquat build [options]
+goros build [options]
 ```
 
 **Options:**
@@ -42,10 +42,10 @@ kumquat build [options]
 - `--no-color`: Disable colors
 
 ### `start`
-Start the production server using the built manifest in `.kumquat`.
+Start the production server using the built manifest in `.goros`.
 
 ```bash
-kumquat start [options]
+goros start [options]
 ```
 
 **Options:**
@@ -62,7 +62,7 @@ kumquat start [options]
 List all project routes as a tree.
 
 ```bash
-kumquat routes [options]
+goros routes [options]
 ```
 
 **Options:**
@@ -76,7 +76,7 @@ kumquat routes [options]
 Inspect matched files and parameters for a specific URL route.
 
 ```bash
-kumquat inspect <url> [options]
+goros inspect <url> [options]
 ```
 
 ---

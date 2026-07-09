@@ -5,7 +5,7 @@ The `routes` command displays all registered page, API, and action routes define
 ## Usage
 
 ```bash
-kumquat routes [options]
+goros routes [options]
 ```
 
 ## Options
@@ -19,7 +19,7 @@ kumquat routes [options]
 ### Default (Tree Layout)
 
 ```txt
-◆ Kumquat routes
+◆ Goros routes
 
   app/routes
   │
