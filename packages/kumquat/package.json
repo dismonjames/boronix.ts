@@ -19,7 +19,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "rm -rf ./dist && bun build ./src/index.ts ./src/cli/main.ts --outdir ./dist --target bun && tsc --emitDeclarationOnly",
+    "build": "rm -rf ./dist && bun build ./src/index.ts ./src/cli/main.ts --outdir ./dist --target bun && tsc -p tsconfig.json --emitDeclarationOnly",
     "typecheck": "tsc --noEmit"
   }
 }
