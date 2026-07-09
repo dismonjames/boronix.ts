@@ -3,6 +3,7 @@ import { createBodyReader } from "./request"
 import { htmlResponse, isFailResult, notFound } from "./response"
 import { matchRoute } from "./router"
 import { createAuth, type Auth } from "./auth"
+import { createFlash, type Flash } from "./flash"
 import { commitSession, createSession, type Session } from "./session"
 import { createActionForm } from "../route/action"
 import { renderPageView } from "../render/view"
@@ -25,6 +26,7 @@ export function createKumquatApp(options: KumquatAppOptions): { fetch(req: Reque
       const url = new URL(req.url)
       const session = createSession(req, options.config.session)
       const auth = createAuth(session)
+      const flash = createFlash(session)
       const manifest = options.dev ? scanRoutes(resolvePath(options.root, options.config.app.routesDir)) : options.manifest ?? []
       const publicResponse = await servePublic(resolvePath(options.root, options.config.app.publicDir), url)
 
@@ -34,9 +36,9 @@ export function createKumquatApp(options: KumquatAppOptions): { fetch(req: Reque
 
       let response: Response
       if (url.pathname.startsWith("/api/")) {
-        response = await handleApi(req, url, manifest, session, auth)
+        response = await handleApi(req, url, manifest, session, auth, flash)
       } else {
-        response = await handlePage(req, url, manifest, options, session, auth)
+        response = await handlePage(req, url, manifest, options, session, auth, flash)
       }
 
       return commitSession(response, session)
@@ -44,7 +46,7 @@ export function createKumquatApp(options: KumquatAppOptions): { fetch(req: Reque
   }
 }
 
-async function handleApi(req: Request, url: URL, manifest: RouteManifest, session: Session, auth: Auth): Promise<Response> {
+async function handleApi(req: Request, url: URL, manifest: RouteManifest, session: Session, auth: Auth, flash: Flash): Promise<Response> {
   const match = matchRoute(manifest, url.pathname, "api")
   if (!match?.item.apiModule) {
     return notFound()
@@ -64,6 +66,7 @@ async function handleApi(req: Request, url: URL, manifest: RouteManifest, sessio
     query: url.searchParams,
     session,
     auth,
+    flash,
     body: createBodyReader(req)
   })
 }
@@ -74,7 +77,8 @@ async function handlePage(
   manifest: RouteManifest,
   options: KumquatAppOptions,
   session: Session,
-  auth: Auth
+  auth: Auth,
+  flash: Flash
 ): Promise<Response> {
   const match = matchRoute(manifest, url.pathname, "page")
   if (!match?.item.pageHtml) {
@@ -82,14 +86,14 @@ async function handlePage(
   }
 
   if (req.method === "POST" && url.search.startsWith("?/")) {
-    return handleAction(req, url, match, options, session, auth)
+    return handleAction(req, url, match, options, session, auth, flash)
   }
 
   if (req.method !== "GET" && req.method !== "HEAD") {
     return new Response("Method Not Allowed", { status: 405 })
   }
 
-  return renderPage(req, url, match, options, session, auth)
+  return renderPage(req, url, match, options, session, auth, flash)
 }
 
 async function handleAction(
@@ -98,7 +102,8 @@ async function handleAction(
   match: NonNullable<ReturnType<typeof matchRoute>>,
   options: KumquatAppOptions,
   session: Session,
-  auth: Auth
+  auth: Auth,
+  flash: Flash
 ): Promise<Response> {
   const actionName = decodeURIComponent(url.search.slice(2))
 
@@ -120,11 +125,12 @@ async function handleAction(
     query: url.searchParams,
     session,
     auth,
+    flash,
     form: createActionForm(await req.formData())
   })
 
   if (isFailResult(result)) {
-    return renderPage(req, url, match, options, session, auth, result.data, result.status)
+    return renderPage(req, url, match, options, session, auth, flash, result.data, result.status)
   }
 
   return result
@@ -137,6 +143,7 @@ async function renderPage(
   options: KumquatAppOptions,
   session: Session,
   auth: Auth,
+  flash: Flash,
   extraData: Record<string, unknown> = {},
   status = 200
 ): Promise<Response> {
@@ -154,6 +161,7 @@ async function renderPage(
         query: url.searchParams,
         session,
         auth,
+        flash,
         user: null
       })
 
@@ -172,7 +180,7 @@ async function renderPage(
     appRoot: resolvePath(options.root, options.config.app.root),
     routesDir: resolvePath(options.root, options.config.app.routesDir),
     routeDir: match.item.routeDir,
-    data: { ...data, ...extraData }
+    data: { ...data, ...extraData, flash: flash.consume() }
   })
 
   return htmlResponse(html, { status })
