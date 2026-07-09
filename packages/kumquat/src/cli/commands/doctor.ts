@@ -182,7 +182,11 @@ export async function doctorCommand(
   }
 
   // Print results
-  console.log(formatHeader("doctor", isPlain))
+  if (isPlain) {
+    console.log(`* Kumquat doctor`)
+  } else {
+    console.log(`${colors.brand(symbols.header())} ${colors.bold("Kumquat doctor")}`)
+  }
   console.log("")
 
   let errorsCount = 0
@@ -191,28 +195,29 @@ export async function doctorCommand(
 
   function printCategory(name: string, checks: CheckResult[]) {
     if (isPlain) {
-      console.log(`${name}:`)
+      console.log(`  ${name}`)
     } else {
       console.log(`  ${colors.bold(name)}`)
     }
 
-    for (const c of checks) {
+    for (let i = 0; i < checks.length; i++) {
+      const c = checks[i]!
+      const isLast = i === checks.length - 1
+      const branch = isLast ? symbols.lastBranch() : symbols.branch()
+
       let sym = ""
       if (c.status === "success") {
-        sym = isPlain ? "OK" : colors.success(symbols.success())
+        sym = isPlain ? "✔" : colors.success(symbols.success())
       } else if (c.status === "warning") {
-        sym = isPlain ? "WARN" : colors.warning(symbols.warning())
+        sym = isPlain ? "⚠" : colors.warning(symbols.warning())
         warningsCount++
       } else {
-        sym = isPlain ? "ERR" : colors.error(symbols.error())
+        sym = isPlain ? "✖" : colors.error(symbols.error())
         errorsCount++
       }
 
-      if (isPlain) {
-        console.log(`${sym} ${c.label}`)
-      } else {
-        console.log(`  ${sym} ${c.label}`)
-      }
+      const branchColored = isPlain ? branch : colors.muted(branch)
+      console.log(`  ${branchColored} ${sym} ${c.label}`)
 
       if (c.hint) {
         hints.push(c.hint)
@@ -227,7 +232,7 @@ export async function doctorCommand(
 
   if (errorsCount > 0) {
     if (isPlain) {
-      console.log(`${errorsCount} issue${errorsCount > 1 ? "s" : ""} found`)
+      console.log(`✖ ${errorsCount} issue${errorsCount > 1 ? "s" : ""} found`)
     } else {
       console.log(`${colors.error(symbols.error())} ${colors.bold(`${errorsCount} issue${errorsCount > 1 ? "s" : ""} found`)}`)
     }
@@ -239,7 +244,7 @@ export async function doctorCommand(
     process.exit(1)
   } else {
     if (isPlain) {
-      console.log("project looks healthy")
+      console.log(`✔ project looks healthy`)
     } else {
       console.log(`${colors.success(symbols.success())} ${colors.bold("project looks healthy")}`)
     }

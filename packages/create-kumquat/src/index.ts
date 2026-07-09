@@ -10,7 +10,7 @@ const packageRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const targetArg = process.argv[2]
 
 async function run() {
-  console.log("\x1b[38;5;208m◇\x1b[0m \x1b[1mcreate-kumquat\x1b[0m\n")
+  console.log("\x1b[38;5;208m◆\x1b[0m \x1b[1mcreate-kumquat\x1b[0m\n")
 
   let projectName = targetArg
   let template = "basic"
@@ -30,7 +30,7 @@ async function run() {
       // Check if target directory already exists
       const checkPath = path.resolve(projectName)
       if (existsSync(checkPath)) {
-        console.error(`\x1b[31m✕\x1b[0m \x1b[1mError:\x1b[0m Target directory already exists: ${projectName}`)
+        console.error(`\x1b[31m✖\x1b[0m \x1b[1mError:\x1b[0m Target directory already exists: ${projectName}`)
         process.exit(1)
       }
 
@@ -59,22 +59,27 @@ async function run() {
   } else {
     // Non-interactive mode
     if (!projectName) {
-      console.error("\x1b[31m✕\x1b[0m \x1b[1mUsage:\x1b[0m create-kumquat <app-name>")
+      console.error("\x1b[31m✖\x1b[0m \x1b[1mUsage:\x1b[0m create-kumquat <app-name>")
       process.exit(1)
     }
 
     const checkPath = path.resolve(projectName)
     if (existsSync(checkPath)) {
-      console.error(`\x1b[31m✕\x1b[0m \x1b[1mError:\x1b[0m Target directory already exists: ${projectName}`)
+      console.error(`\x1b[31m✖\x1b[0m \x1b[1mError:\x1b[0m Target directory already exists: ${projectName}`)
       process.exit(1)
     }
   }
+
+  // Print summary card
+  console.log(`  \x1b[32m✔\x1b[0m \x1b[90mproject\x1b[0m   \x1b[1m${projectName}\x1b[0m`)
+  console.log(`  \x1b[32m✔\x1b[0m \x1b[90mtemplate\x1b[0m  \x1b[1m${template}\x1b[0m`)
+  console.log(`  \x1b[32m✔\x1b[0m \x1b[90mruntime\x1b[0m   \x1b[1m${runtime}\x1b[0m\n`)
 
   const targetDir = path.resolve(projectName)
   const templateDir = path.join(packageRoot, "src", "templates", template)
 
   if (!existsSync(templateDir)) {
-    console.error(`\x1b[31m✕\x1b[0m \x1b[1mError:\x1b[0m Template '${template}' not found at ${templateDir}`)
+    console.error(`\x1b[31m✖\x1b[0m \x1b[1mError:\x1b[0m Template '${template}' not found at ${templateDir}`)
     process.exit(1)
   }
 
@@ -96,9 +101,9 @@ async function run() {
       "doctor": "kumquat doctor"
     }
 
-    // Set kumquat version to local version or 0.2.2-cli
+    // Set kumquat version to ^0.2.3
     if (pkg.dependencies && pkg.dependencies.kumquat) {
-      pkg.dependencies.kumquat = "^0.2.2-cli"
+      pkg.dependencies.kumquat = "^0.2.3"
     }
 
     writeFileSync(pkgPath, JSON.stringify(pkg, null, 2), "utf8")
@@ -112,32 +117,45 @@ async function run() {
     writeFileSync(configPath, configContent, "utf8")
   }
 
+  console.log(`\x1b[32m✔\x1b[0m created project`)
+
   // Git init
   if (git) {
     try {
       execSync("git init", { cwd: targetDir, stdio: "ignore" })
+      console.log(`\x1b[32m✔\x1b[0m initialized git repository`)
     } catch {}
   }
 
   // Install dependencies
+  let installFailed = false
   if (install) {
     try {
       const pm = runtime === "bun" ? "bun" : "npm"
-      execSync(`${pm} install`, { cwd: targetDir, stdio: "inherit" })
+      execSync(`${pm} install`, { cwd: targetDir, stdio: "ignore" })
     } catch (err) {
-      console.warn("\x1b[33m⚠\x1b[0m \x1b[1mWarning:\x1b[0m Failed to install dependencies.")
+      installFailed = true
     }
   }
 
-  console.log(`\n\x1b[32m✓\x1b[0m created ${projectName}\n`)
-  console.log("Next steps:")
-  console.log(`  cd ${projectName}`)
-  if (!install) {
+  console.log("")
+
+  if (installFailed) {
+    console.log(`\x1b[33m⚠\x1b[0m dependency install failed\n`)
+    console.log(`Hint:`)
+    console.log(`  Run \`bun install\` manually.\n`)
+  }
+
+  console.log("\x1b[1mNext steps\x1b[0m")
+  console.log(`  \x1b[38;5;208m➜\x1b[0m cd ${projectName}`)
+  if (!install || installFailed) {
     const pm = runtime === "bun" ? "bun" : "npm"
-    console.log(`  ${pm} install`)
+    console.log(`  \x1b[38;5;208m➜\x1b[0m ${pm} install`)
   }
   const pmRun = runtime === "bun" ? "bun" : "npm"
-  console.log(`  ${pmRun} run dev`)
+  console.log(`  \x1b[38;5;208m➜\x1b[0m ${pmRun} run dev\n`)
+  console.log("\x1b[1mThen open\x1b[0m")
+  console.log(`  \x1b[38;5;208m➜\x1b[0m http://localhost:3000`)
 }
 
 run().catch((err) => {

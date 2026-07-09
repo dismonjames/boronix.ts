@@ -16,6 +16,12 @@ export type KumquatConfig = {
     routesDir?: string
     publicDir?: string
   }
+  cli?: {
+    color?: boolean
+    unicode?: boolean
+    requestLog?: boolean
+    groupRoutes?: boolean
+  }
 }
 
 export type ResolvedKumquatConfig = {
@@ -36,6 +42,12 @@ export type ResolvedKumquatConfig = {
     routesDir: string
     publicDir: string
   }
+  cli: {
+    color: boolean
+    unicode: boolean
+    requestLog: boolean
+    groupRoutes: boolean
+  }
 }
 
 export const defaultConfig: ResolvedKumquatConfig = {
@@ -55,5 +67,11 @@ export const defaultConfig: ResolvedKumquatConfig = {
     root: "app",
     routesDir: "app/routes",
     publicDir: "public"
+  },
+  cli: {
+    color: true,
+    unicode: true,
+    requestLog: true,
+    groupRoutes: true
   }
 }

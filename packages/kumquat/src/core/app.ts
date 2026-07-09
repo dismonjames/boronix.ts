@@ -1,4 +1,6 @@
 import { pathToFileURL } from "node:url"
+import path from "node:path"
+import { KumquatUserError } from "./errors"
 import { createBodyReader, readFormData } from "./request"
 import { htmlResponse, isFailResult, notFound } from "./response"
 import { matchRoute } from "./router"
@@ -13,11 +15,16 @@ import { servePublic } from "../static/serve-public"
 import { resolvePath } from "../utils/path"
 import type { ResolvedKumquatConfig } from "../config/types"
 
+import { logRequest, isStaticAsset } from "../cli/ui/activity"
+
 export type KumquatAppOptions = {
   root: string
   config: ResolvedKumquatConfig
-  manifest?: RouteManifest
-  dev?: boolean
+  manifest?: RouteManifest | undefined
+  dev?: boolean | undefined
+  quiet?: boolean | undefined
+  verbose?: boolean | undefined
+  plain?: boolean | undefined
 }
 
 export function createKumquatApp(options: KumquatAppOptions): { fetch(req: Request): Promise<Response> } {
@@ -28,20 +35,78 @@ export function createKumquatApp(options: KumquatAppOptions): { fetch(req: Reque
       const auth = createAuth(session)
       const flash = createFlash(session)
       const manifest = options.dev ? scanRoutes(resolvePath(options.root, options.config.app.routesDir)) : options.manifest ?? []
-      const publicResponse = await servePublic(resolvePath(options.root, options.config.app.publicDir), url)
 
-      if (publicResponse) {
-        return commitSession(publicResponse, session)
+      const startTime = performance.now()
+      let status = 200
+      let kind: "serve" | "render" | "api" | "action" | "miss" | "error" = "serve"
+      let extra = ""
+      let response: Response | null = null
+
+      try {
+        const publicResponse = await servePublic(resolvePath(options.root, options.config.app.publicDir), url)
+        if (publicResponse) {
+          response = publicResponse
+          kind = "serve"
+        } else {
+          if (url.pathname.startsWith("/api/")) {
+            kind = "api"
+            const matched = matchRoute(manifest, url.pathname, "api")
+            if (!matched) {
+              kind = "miss"
+            }
+            response = await handleApi(req, url, manifest, session, auth, flash)
+          } else {
+            const matched = matchRoute(manifest, url.pathname, "page")
+            if (!matched) {
+              kind = "miss"
+            } else {
+              if (req.method === "POST" && url.search.startsWith("?/")) {
+                kind = "action"
+              } else {
+                kind = matched.item.pageModule ? "render" : "serve"
+              }
+            }
+            response = await handlePage(req, url, manifest, options, session, auth, flash)
+          }
+        }
+
+        status = response.status
+        if (status >= 300 && status < 400) {
+          extra = response.headers.get("location") ?? ""
+        } else if (status >= 400 && status < 500) {
+          if (kind === "action") {
+            extra = "fail"
+          } else if (kind === "miss") {
+            extra = ""
+          }
+        }
+
+        const finalResponse = commitSession(response, session)
+        return finalResponse
+      } catch (err: any) {
+        status = 500
+        kind = "error"
+        extra = err.message || ""
+        throw err
+      } finally {
+        const duration = Math.round(performance.now() - startTime)
+        const configLog = options.config.cli.requestLog
+        const isCliRunning = options.quiet !== undefined || options.verbose !== undefined || options.plain !== undefined || options.dev
+        
+        if (configLog && isCliRunning) {
+          const isStatic = isStaticAsset(url.pathname)
+          const isQuiet = options.quiet === true
+          const isVerbose = options.verbose === true
+          
+          if (isStatic && !isVerbose) {
+            // skip static logs
+          } else if (isQuiet && status < 500) {
+            // skip normal logs in quiet mode
+          } else {
+            logRequest(req.method, url.pathname + url.search, status, kind, duration, extra, options.dev)
+          }
+        }
       }
-
-      let response: Response
-      if (url.pathname.startsWith("/api/")) {
-        response = await handleApi(req, url, manifest, session, auth, flash)
-      } else {
-        response = await handlePage(req, url, manifest, options, session, auth, flash)
-      }
-
-      return commitSession(response, session)
     }
   }
 }
@@ -115,7 +180,14 @@ async function handleAction(
   const handler = module[actionName]
 
   if (typeof handler !== "function") {
-    return notFound()
+    const foundActions = Object.keys(module).filter(k => k !== "default" && typeof module[k] === "function")
+    throw new KumquatUserError(`Action \`${actionName}\` was not found.`, {
+      code: "KQ_ACTION_NOT_FOUND",
+      file: path.relative(options.root, match.item.actionsModule),
+      expected: `export const ${actionName} = action(...)`,
+      found: foundActions.length > 0 ? foundActions.join(", ") : "none",
+      hint: "Rename the export or update the form action."
+    })
   }
 
   const result = await handler({

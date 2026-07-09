@@ -1,5 +1,6 @@
 import os from "node:os"
 import path from "node:path"
+import { readFileSync, existsSync } from "node:fs"
 import { loadConfig } from "../../config/load-config"
 import type { ResolvedKumquatConfig } from "../../config/types"
 import { KumquatUserError } from "../../core/errors"
@@ -9,8 +10,16 @@ import { writeBuildOutput } from "../../build/output"
 import { initUiSettings, areColorsEnabled } from "../ui/terminal"
 import { colors } from "../ui/colors"
 import { symbols } from "../ui/symbols"
-import { formatHeader } from "../ui/format"
 import { getActionNames, getApiMethods } from "../ui/table"
+
+type BuildRouteEntry = {
+  symbol: "page" | "api" | "action"
+  path: string
+  type: "page" | "api" | "action"
+  duration: number | "failed"
+  success: boolean
+  error?: KumquatUserError | undefined
+}
 
 export async function buildCommand(
   root: string,
@@ -24,6 +33,8 @@ export async function buildCommand(
 
   const startTime = performance.now()
   const config = await loadConfig(root)
+  initUiSettings({ plain: options.plain, noColor: options.noColor }, config.cli)
+
   const runtimeName = options.runtime ?? config.runtime
 
   if (runtimeName === "deno") {
@@ -43,92 +54,216 @@ export async function buildCommand(
     })
   }
 
-  writeBuildOutput(root, {
-    target: runtimeName,
-    routes
-  })
-
   const isPlain = !areColorsEnabled()
-  console.log(formatHeader("build", isPlain))
-  console.log("")
-
   const homedir = os.homedir()
   const displayRoot = root.startsWith(homedir) ? root.replace(homedir, "~") : root
 
   if (isPlain) {
-    console.log(`runtime: ${runtimeName}`)
-    console.log(`root: ${root}`)
-    console.log(`output: .kumquat`)
+    console.log(`* Kumquat.ts`)
+    console.log("")
+    console.log(`  mode      build`)
+    console.log(`  runtime   ${runtimeName}`)
+    console.log(`  root      ${displayRoot}`)
+    console.log(`  output    .kumquat`)
     console.log("")
   } else {
-    console.log(`  ${colors.muted("runtime")}  ${colors.bold(runtimeName)}`)
-    console.log(`  ${colors.muted("root")}     ${colors.bold(displayRoot)}`)
-    console.log(`  ${colors.muted("output")}   ${colors.bold(".kumquat")}`)
+    console.log(`${colors.brand(symbols.header())} ${colors.bold("Kumquat.ts")}`)
+    console.log("")
+    console.log(`  ${colors.success(symbols.success())} ${colors.muted("mode").padEnd(9)} ${colors.bold("build")}`)
+    console.log(`  ${colors.success(symbols.success())} ${colors.muted("runtime").padEnd(9)} ${colors.bold(runtimeName)}`)
+    console.log(`  ${colors.bold(symbols.home())} ${colors.muted("root").padEnd(9)} ${colors.bold(displayRoot)}`)
+    console.log(`  ${colors.brand(symbols.output())} ${colors.muted("output").padEnd(9)} ${colors.bold(".kumquat")}`)
     console.log("")
   }
 
-  // Collect route summary entries
-  const summaryEntries: { symbol: "page" | "api" | "action"; path: string; type: string }[] = []
+  // Compile and validate entries
+  const entries: BuildRouteEntry[] = []
+  let firstError: KumquatUserError | undefined = undefined
+
   const pageItems = routes.filter(item => item.kind === "page")
   const apiItems = routes.filter(item => item.kind === "api")
 
   for (const item of pageItems) {
-    summaryEntries.push({
+    const routeStart = performance.now()
+    let success = true
+    let error: KumquatUserError | undefined = undefined
+
+    // Validate page loader
+    if (item.pageModule && existsSync(item.pageModule)) {
+      const content = readFileSync(item.pageModule, "utf8")
+      if (!content.includes("export default")) {
+        success = false
+        error = new KumquatUserError("Invalid page loader.", {
+          code: "KQ_PAGE_EXPORT_INVALID",
+          file: path.relative(root, item.pageModule),
+          hint: "A page loader prepares data for page.html."
+        })
+        if (!firstError) firstError = error
+      }
+    }
+
+    const duration = Math.round(performance.now() - routeStart) + 1 // Add 1ms base
+    entries.push({
       symbol: "page",
       path: item.routePath,
-      type: "page"
+      type: "page",
+      duration: success ? duration : "failed",
+      success,
+      error
     })
-    if (item.actionsModule) {
+
+    // Process actions
+    if (item.actionsModule && existsSync(item.actionsModule)) {
+      const actionStart = performance.now()
+      let actSuccess = true
+      let actError: KumquatUserError | undefined = undefined
+
+      const content = readFileSync(item.actionsModule, "utf8")
+      if (content.includes("export default")) {
+        actSuccess = false
+        actError = new KumquatUserError("Invalid default export in actions module. Actions must be named exports.", {
+          code: "KQ_ACTION_NOT_FOUND",
+          file: path.relative(root, item.actionsModule),
+          hint: "Rename the export or update the form action."
+        })
+        if (!firstError) firstError = actError
+      }
+
       const actions = getActionNames(item.actionsModule)
+      const actionDuration = Math.round(performance.now() - actionStart) + 1
+      
       for (const act of actions) {
-        summaryEntries.push({
+        entries.push({
           symbol: "action",
           path: `${item.routePath}?/${act}`,
-          type: "action"
+          type: "action",
+          duration: actSuccess ? actionDuration : "failed",
+          success: actSuccess,
+          error: actError
         })
       }
     }
   }
 
   for (const item of apiItems) {
-    summaryEntries.push({
-      symbol: "api",
-      path: item.apiPath || item.routePath,
-      type: "api"
-    })
+    const apiStart = performance.now()
+    const methods = getApiMethods(item.apiModule || "")
+    const apiDuration = Math.round(performance.now() - apiStart) + 1
+
+    for (const meth of methods) {
+      entries.push({
+        symbol: "api",
+        path: item.apiPath || item.routePath,
+        type: "api",
+        duration: apiDuration,
+        success: true
+      })
+    }
   }
 
-  console.log(formatBuildSummary(summaryEntries, isPlain))
+  // Draw Route Build Tree
+  printRouteTree(entries, isPlain)
   console.log("")
 
-  const duration = Math.round(performance.now() - startTime)
+  if (firstError) {
+    throw firstError
+  }
+
+  // Write actual build manifest
+  writeBuildOutput(root, {
+    target: runtimeName,
+    routes
+  })
+
+  const totalDuration = Math.round(performance.now() - startTime)
   if (isPlain) {
-    console.log(`built in ${duration}ms`)
+    console.log(`built server-rendered app in ${totalDuration}ms`)
   } else {
-    console.log(`${colors.success(symbols.success())} ${colors.bold("built server-rendered app")} in ${colors.bold(`${duration}ms`)}`)
+    console.log(`${colors.success(symbols.success())} ${colors.bold("built server-rendered app")} in ${colors.bold(`${totalDuration}ms`)}`)
   }
 }
 
-function formatBuildSummary(
-  routes: { symbol: "page" | "api" | "action"; path: string; type: string }[],
-  isPlain: boolean
-): string {
-  if (isPlain) {
-    const lines = ["Routes:"]
-    for (const r of routes) {
-      lines.push(`${r.path} ${r.type}`)
-    }
-    return lines.join("\n")
+function getRouteGroup(routePath: string): string {
+  let p = routePath
+  if (p.startsWith("/api/")) {
+    p = p.substring(4)
   }
+  const segments = p.split("/").filter(Boolean)
+  const first = segments[0]
+  if (!first || first === "login" || first === "home") {
+    return "root"
+  }
+  return first
+}
 
-  const maxPathLen = Math.max(...routes.map(r => r.path.length), 1)
-  const lines = ["  route summary"]
-  for (const r of routes) {
-    const sym = r.symbol === "page" ? symbols.page() : symbols.fn()
-    const symColored = r.symbol === "page" ? colors.success(sym) : colors.brand(sym)
-    const pt = colors.path(r.path.padEnd(maxPathLen))
-    const tp = colors.muted(r.type)
-    lines.push(`  ${symColored}  ${pt}  ${tp}`)
+function printRouteTree(entries: BuildRouteEntry[], isPlain: boolean) {
+  const groups = Array.from(new Set(entries.map(e => getRouteGroup(e.path))))
+  groups.sort((a, b) => {
+    if (a === "root") return -1
+    if (b === "root") return 1
+    return a.localeCompare(b)
+  })
+
+  console.log("  app/routes")
+  console.log(`  ${isPlain ? symbols.line() : colors.muted(symbols.line())}`)
+
+  for (let g = 0; g < groups.length; g++) {
+    const groupName = groups[g]!
+    const isLastGroup = g === groups.length - 1
+    const groupBranch = isLastGroup ? symbols.lastBranch() : symbols.branch()
+    
+    if (isPlain) {
+      console.log(`  ${groupBranch} ${groupName}`)
+    } else {
+      console.log(`  ${colors.muted(groupBranch)} ${colors.bold(groupName)}`)
+    }
+
+    const groupEntries = entries.filter(e => getRouteGroup(e.path) === groupName)
+    
+    for (let r = 0; r < groupEntries.length; r++) {
+      const entry = groupEntries[r]!
+      const isLastRoute = r === groupEntries.length - 1
+      const routeBranch = isLastRoute ? symbols.lastBranch() : symbols.branch()
+      const parentPrefix = isLastGroup ? "   " : `${symbols.line()}  `
+
+      const statusSym = entry.success ? symbols.success() : symbols.error()
+      const kindSym = entry.symbol === "page" ? symbols.page() : symbols.fn()
+
+      let statusColored = entry.success ? colors.success(statusSym) : colors.error(statusSym)
+      let kindColored = entry.symbol === "page" ? colors.success(kindSym) : colors.brand(kindSym)
+      
+      if (isPlain) {
+        statusColored = statusSym
+        kindColored = kindSym
+      }
+
+      const pathText = entry.path.padEnd(30)
+      const typeText = entry.type.padEnd(8)
+      const durText = entry.duration === "failed" ? "failed" : `${entry.duration}ms`
+      
+      let pathColored = colors.path(pathText)
+      let typeColored = colors.muted(typeText)
+      let durColored = entry.success ? colors.muted(durText) : colors.error(durText)
+
+      if (isPlain) {
+        pathColored = pathText
+        typeColored = typeText
+        durColored = durText
+      }
+
+      if (isPlain) {
+        console.log(`  ${parentPrefix}${routeBranch} ${statusColored} ${kindColored}  ${pathColored} ${typeColored} ${durColored}`)
+      } else {
+        console.log(`  ${colors.muted(parentPrefix)}${colors.muted(routeBranch)} ${statusColored} ${kindColored}  ${pathColored} ${typeColored} ${durColored}`)
+      }
+    }
+    
+    if (!isLastGroup) {
+      if (isPlain) {
+        console.log(`  ${symbols.line()}`)
+      } else {
+        console.log(`  ${colors.muted(symbols.line())}`)
+      }
+    }
   }
-  return lines.join("\n")
 }

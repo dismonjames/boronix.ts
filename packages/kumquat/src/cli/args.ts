@@ -11,6 +11,13 @@ export type CliArgs = {
   noColor: boolean
   help: boolean
   version: boolean
+  open: boolean
+  quiet: boolean
+  verbose: boolean
+  json: boolean
+  full: boolean
+  flat: boolean
+  positionals: string[]
 }
 
 export function parseCliArgs(argv: string[]): CliArgs {
@@ -20,10 +27,17 @@ export function parseCliArgs(argv: string[]): CliArgs {
   let runtime: "bun" | "node" | "deno" | undefined = undefined
   let port: number | undefined = undefined
   let host: string | undefined = undefined
+  const positionals: string[] = []
   let plain = false
   let noColor = false
   let help = false
   let version = false
+  let open = false
+  let quiet = false
+  let verbose = false
+  let json = false
+  let full = false
+  let flat = false
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i]
@@ -36,6 +50,18 @@ export function parseCliArgs(argv: string[]): CliArgs {
       plain = true
     } else if (arg === "--no-color") {
       noColor = true
+    } else if (arg === "-o" || arg === "--open") {
+      open = true
+    } else if (arg === "--quiet") {
+      quiet = true
+    } else if (arg === "--verbose") {
+      verbose = true
+    } else if (arg === "--json") {
+      json = true
+    } else if (arg === "--full") {
+      full = true
+    } else if (arg === "--flat") {
+      flat = true
     } else if (arg === "--root") {
       const val = args[i + 1]
       if (val && !val.startsWith("-")) {
@@ -71,6 +97,8 @@ export function parseCliArgs(argv: string[]): CliArgs {
     } else if (!arg.startsWith("-")) {
       if (!command) {
         command = arg
+      } else {
+        positionals.push(arg)
       }
     }
   }
@@ -84,6 +112,13 @@ export function parseCliArgs(argv: string[]): CliArgs {
     plain,
     noColor,
     help,
-    version
+    version,
+    open,
+    quiet,
+    verbose,
+    json,
+    full,
+    flat,
+    positionals
   }
 }

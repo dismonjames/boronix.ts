@@ -56,21 +56,39 @@ kumquat start     # Start production server
 kumquat info      # Print environment information
 kumquat doctor    # Check project health
 kumquat typegen   # Generate route types
+kumquat routes    # List all project routes as a tree
+kumquat inspect   # Inspect matched files for a specific route
 ```
 
-### CLI Dev TUI Preview
+### CLI Dev Preview
 
 ```txt
-◇ Kumquat dev
+◆ Kumquat.ts
 
-  runtime  bun
-  local    http://localhost:3000
+  ✔ mode      dev
+  ✔ runtime   bun
+  ➜ local     http://localhost:3000
+  ⌂ root      ~/Documents/homework-app
 
-  routes
-  ○  GET   /              page
-  ƒ  GET   /api/exercises api
+✔ ready, serving HTML in 58ms
+```
 
-✓ ready, serving HTML in 74ms
+### CLI Build Tree Preview
+
+```txt
+◆ Kumquat.ts
+
+  ✔ mode      build
+  ✔ runtime   bun
+  ◇ output    .kumquat
+
+  app/routes
+  │
+  └─ root
+     ├─ ✔ ○  /       page  4ms
+     └─ ✔ ○  /login  page  6ms
+
+✔ built server-rendered app in 41ms
 ```
 
 Use Node runtime when needed:

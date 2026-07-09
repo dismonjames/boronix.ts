@@ -9,6 +9,8 @@ import { startCommand } from "./commands/start"
 import { infoCommand } from "./commands/info"
 import { doctorCommand } from "./commands/doctor"
 import { typegenCommand } from "./commands/typegen"
+import { routesCommand } from "./commands/routes"
+import { inspectCommand } from "./commands/inspect"
 import { initUiSettings } from "./ui/terminal"
 import { formatRootHelp, formatCommandHelp } from "./ui/format"
 import { formatCliError } from "./ui/errors"
@@ -68,7 +70,10 @@ async function main(argv: string[]): Promise<void> {
       port: parsed.port,
       host: parsed.host,
       plain: parsed.plain,
-      noColor: parsed.noColor
+      noColor: parsed.noColor,
+      open: parsed.open,
+      quiet: parsed.quiet,
+      verbose: parsed.verbose
     })
     return
   }
@@ -88,7 +93,9 @@ async function main(argv: string[]): Promise<void> {
       port: parsed.port,
       host: parsed.host,
       plain: parsed.plain,
-      noColor: parsed.noColor
+      noColor: parsed.noColor,
+      quiet: parsed.quiet,
+      verbose: parsed.verbose
     })
     return
   }
@@ -111,6 +118,26 @@ async function main(argv: string[]): Promise<void> {
 
   if (parsed.command === "typegen") {
     await typegenCommand(parsed.root, {
+      plain: parsed.plain,
+      noColor: parsed.noColor
+    })
+    return
+  }
+
+  if (parsed.command === "routes") {
+    await routesCommand(parsed.root, {
+      plain: parsed.plain,
+      noColor: parsed.noColor,
+      json: parsed.json,
+      full: parsed.full,
+      flat: parsed.flat
+    })
+    return
+  }
+
+  if (parsed.command === "inspect") {
+    const routePath = parsed.positionals[0] ?? ""
+    await inspectCommand(parsed.root, routePath, {
       plain: parsed.plain,
       noColor: parsed.noColor
     })

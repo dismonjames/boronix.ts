@@ -29,6 +29,12 @@ export async function loadConfig(root: string): Promise<ResolvedKumquatConfig> {
       root: userConfig.app?.root ?? defaultConfig.app.root,
       routesDir: userConfig.app?.routesDir ?? defaultConfig.app.routesDir,
       publicDir: userConfig.app?.publicDir ?? defaultConfig.app.publicDir
+    },
+    cli: {
+      color: userConfig.cli?.color ?? defaultConfig.cli.color,
+      unicode: userConfig.cli?.unicode ?? defaultConfig.cli.unicode,
+      requestLog: userConfig.cli?.requestLog ?? defaultConfig.cli.requestLog,
+      groupRoutes: userConfig.cli?.groupRoutes ?? defaultConfig.cli.groupRoutes
     }
   }
 }

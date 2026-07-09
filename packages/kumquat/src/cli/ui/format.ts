@@ -14,6 +14,8 @@ ${colors.bold("Commands")}
   info      Print environment information
   doctor    Check project health
   typegen   Generate route types
+  routes    List all project routes as a tree
+  inspect   Inspect matched files for a specific URL route
 
 ${colors.bold("Options")}
   -h, --help       Show help
@@ -29,6 +31,9 @@ export function formatCommandHelp(command: string): string {
   --runtime <name>    bun | node
   -p, --port <port>   Server port
   -H, --host <host>   Server host
+  -o, --open          Open the browser automatically
+  --quiet             Startup and errors output only
+  --verbose           Detailed output with static asset requests
   --plain             Disable colors, unicode, and spinner
   --no-color          Disable colors`
   } else if (command === "start") {
@@ -36,12 +41,21 @@ export function formatCommandHelp(command: string): string {
   --runtime <name>    bun | node
   -p, --port <port>   Server port
   -H, --host <host>   Server host
+  --quiet             Startup and errors output only
+  --verbose           Detailed request logs
   --plain             Disable colors, unicode, and spinner
   --no-color          Disable colors`
   } else if (command === "build") {
     options = `  --root <dir>        Project root
   --runtime <name>    bun | node
   --plain             Disable colors, unicode, and spinner
+  --no-color          Disable colors`
+  } else if (command === "routes") {
+    options = `  --root <dir>        Project root
+  --json              Output routes summary in machine JSON format
+  --full              Output full absolute paths of matched source modules
+  --flat              Output a flat route list without tree structures
+  --plain             Disable styling and colors
   --no-color          Disable colors`
   } else {
     options = `  --root <dir>        Project root

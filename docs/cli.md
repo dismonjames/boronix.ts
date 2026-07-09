@@ -11,7 +11,7 @@ kumquat <command> [options]
 ## Commands
 
 ### `dev`
-Start the development server with live route scanning and interactive TUI output.
+Start the development server with live request activity logging.
 
 ```bash
 kumquat dev [options]
@@ -22,11 +22,14 @@ kumquat dev [options]
 - `--runtime <bun|node>`: Target server runtime (default: `bun`)
 - `-p, --port <port>`: Port to listen on (default: `3000`)
 - `-H, --host <host>`: Host to bind to (default: `0.0.0.0`)
+- `-o, --open`: Open the browser automatically
+- `--quiet`: Startup and errors output only
+- `--verbose`: Detailed output with static asset requests
 - `--plain`: Disable colors, unicode, and spinner
 - `--no-color`: Disable terminal colors
 
 ### `build`
-Compile your server-rendered app and generate a production manifest in `.kumquat`.
+Compile your server-rendered app and generate a production manifest in `.kumquat`, rendering a route build tree.
 
 ```bash
 kumquat build [options]
@@ -50,8 +53,31 @@ kumquat start [options]
 - `--runtime <bun|node>`: Production server runtime override
 - `-p, --port <port>`: Server port override
 - `-H, --host <host>`: Server host override
+- `--quiet`: Startup and errors output only
+- `--verbose`: Detailed request logs
 - `--plain`: Disable styling
 - `--no-color`: Disable colors
+
+### `routes`
+List all project routes as a tree.
+
+```bash
+kumquat routes [options]
+```
+
+**Options:**
+- `--json`: Output routes summary in machine JSON format
+- `--full`: Output full absolute paths of matched source modules
+- `--flat`: Output a flat route list without tree structures
+- `--plain`: Disable styling and colors
+- `--no-color`: Disable colors
+
+### `inspect`
+Inspect matched files and parameters for a specific URL route.
+
+```bash
+kumquat inspect <url> [options]
+```
 
 ---
 

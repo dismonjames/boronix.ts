@@ -11,6 +11,8 @@ import { colors } from "../ui/colors"
 import { formatHeader } from "../ui/format"
 import { getActionNames } from "../ui/table"
 
+import { symbols } from "../ui/symbols"
+
 export async function infoCommand(
   root: string,
   options: {
@@ -69,50 +71,73 @@ export async function infoCommand(
   const homedir = os.homedir()
   const displayRoot = root.startsWith(homedir) ? root.replace(homedir, "~") : root
 
-  console.log(formatHeader("info", isPlain))
+  if (isPlain) {
+    console.log(`* Kumquat info`)
+  } else {
+    console.log(`${colors.brand(symbols.header())} ${colors.bold("Kumquat info")}`)
+  }
   console.log("")
 
-  if (isPlain) {
-    console.log("system")
-    console.log(`os       ${osName}`)
-    console.log(`shell    ${shell}`)
-    console.log(`cpu      ${cpuModel}`)
-    console.log(`memory   ${totalMemGB}`)
+  function printInfoGroup(title: string, items: { label: string; value: string }[]) {
+    if (isPlain) {
+      console.log(`  ${title}`)
+    } else {
+      console.log(`  ${colors.bold(title)}`)
+    }
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]!
+      const isLast = i === items.length - 1
+      const branch = isLast ? symbols.lastBranch() : symbols.branch()
+      
+      let sym = ""
+      if (title === "project") {
+        if (item.label === "pages") {
+          sym = isPlain ? "○" : colors.success(symbols.page())
+        } else {
+          sym = isPlain ? "ƒ" : colors.brand(symbols.fn())
+        }
+      } else {
+        if (item.label === "root") {
+          sym = isPlain ? "root" : colors.bold(symbols.home())
+        } else {
+          sym = isPlain ? "✔" : colors.success(symbols.success())
+        }
+      }
+
+      const branchColored = isPlain ? branch : colors.muted(branch)
+      const labelText = item.label.padEnd(8)
+      const labelColored = isPlain ? labelText : colors.muted(labelText)
+      const valColored = isPlain ? item.value : colors.bold(item.value)
+
+      console.log(`  ${branchColored} ${sym} ${labelColored} ${valColored}`)
+    }
     console.log("")
-    console.log("binaries")
-    console.log(`bun      ${bunVersion}`)
-    console.log(`node     ${nodeVersion}`)
-    console.log("")
-    console.log("kumquat")
-    console.log(`version  ${version}`)
-    console.log(`runtime  ${runtime}`)
-    console.log(`root     ${root}`)
-    console.log("")
-    console.log("project")
-    console.log(`pages    ${pagesCount}`)
-    console.log(`apis     ${apisCount}`)
-    console.log(`actions  ${actionsCount}`)
-  } else {
-    console.log(`  ${colors.bold("system")}`)
-    console.log(`  os       ${osName}`)
-    console.log(`  shell    ${shell}`)
-    console.log(`  cpu      ${cpuModel}`)
-    console.log(`  memory   ${totalMemGB}`)
-    console.log("")
-    console.log(`  ${colors.bold("binaries")}`)
-    console.log(`  bun      ${bunVersion}`)
-    console.log(`  node     ${nodeVersion}`)
-    console.log("")
-    console.log(`  ${colors.bold("kumquat")}`)
-    console.log(`  version  ${version}`)
-    console.log(`  runtime  ${runtime}`)
-    console.log(`  root     ${displayRoot}`)
-    console.log("")
-    console.log(`  ${colors.bold("project")}`)
-    console.log(`  pages    ${pagesCount}`)
-    console.log(`  apis     ${apisCount}`)
-    console.log(`  actions  ${actionsCount}`)
   }
+
+  printInfoGroup("system", [
+    { label: "os", value: osName },
+    { label: "shell", value: shell },
+    { label: "cpu", value: cpuModel },
+    { label: "memory", value: totalMemGB }
+  ])
+
+  printInfoGroup("binaries", [
+    { label: "bun", value: bunVersion },
+    { label: "node", value: nodeVersion }
+  ])
+
+  printInfoGroup("kumquat", [
+    { label: "version", value: version },
+    { label: "runtime", value: runtime },
+    { label: "root", value: displayRoot }
+  ])
+
+  printInfoGroup("project", [
+    { label: "pages", value: String(pagesCount) },
+    { label: "apis", value: String(apisCount) },
+    { label: "actions", value: String(actionsCount) }
+  ])
 }
 
 function getBinaryVersion(bin: string): string {

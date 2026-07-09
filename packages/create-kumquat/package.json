@@ -1,6 +1,6 @@
 {
   "name": "create-kumquat",
-  "version": "0.2.2-cli",
+  "version": "0.2.3",
   "description": "Create a Kumquat.ts app.",
   "type": "module",
   "license": "MPL-2.0",

@@ -22,6 +22,10 @@ export function formatCliError(error: unknown): string {
       lines.push(colors.bold("Expected:"), `  ${error.expected}`, "")
     }
 
+    if (error.found) {
+      lines.push(colors.bold("Found:"), `  ${error.found}`, "")
+    }
+
     if (error.hint) {
       lines.push(colors.bold("Hint:"), `  ${error.hint}`, "")
     }

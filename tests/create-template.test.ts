@@ -16,5 +16,5 @@ test("create template package has runnable scripts", () => {
   expect(templatePackage.scripts.dev).toBe("kumquat dev")
   expect(templatePackage.scripts.build).toBe("kumquat build")
   expect(templatePackage.scripts.start).toBe("kumquat start")
-  expect(templatePackage.dependencies.kumquat).toBe("^0.2.2-cli")
+  expect(templatePackage.dependencies.kumquat).toBe("^0.2.3")
 })

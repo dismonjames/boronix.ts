@@ -8,6 +8,6 @@
     "start": "kumquat start"
   },
   "dependencies": {
-    "kumquat": "^0.2.2-cli"
+    "kumquat": "^0.2.3"
   }
 }

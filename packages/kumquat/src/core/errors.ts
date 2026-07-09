@@ -2,6 +2,7 @@ export type KumquatErrorOptions = {
   code?: string
   file?: string
   expected?: string
+  found?: string
   hint?: string
   cause?: unknown
 }
@@ -17,6 +18,7 @@ export class KumquatUserError extends KumquatError {
   readonly code?: string | undefined
   readonly file?: string | undefined
   readonly expected?: string | undefined
+  readonly found?: string | undefined
   readonly hint?: string | undefined
 
   constructor(message: string, options: KumquatErrorOptions = {}) {
@@ -25,6 +27,7 @@ export class KumquatUserError extends KumquatError {
     this.code = options.code
     this.file = options.file
     this.expected = options.expected
+    this.found = options.found
     this.hint = options.hint
     this.cause = options.cause
   }
