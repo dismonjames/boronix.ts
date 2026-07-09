@@ -1,17 +1,30 @@
 # Boronix
 
-Boronix is an experimental HTML-first fullstack framework for TypeScript.
+[![npm version](https://img.shields.io/npm/v/boronix.svg)](https://www.npmjs.com/package/boronix)
+[![npm downloads](https://img.shields.io/npm/dm/boronix.svg)](https://www.npmjs.com/package/boronix)
+[![license](https://img.shields.io/npm/l/boronix.svg)](./LICENSE)
+[![CI](https://github.com/dismonjames/boronix.ts/actions/workflows/publish.yml/badge.svg)](https://github.com/dismonjames/boronix.ts/actions/workflows/publish.yml)
 
-It is server-first, SSR-first, and uses real HTML templates. Client JavaScript is not automatic, React is not part of the framework, and Bun is the first runtime target.
+Boronix is an HTML-first fullstack framework for TypeScript.
 
-Boronix is dogfooded through a small homework app using login, dashboard-style HTML pages, local actions, and JSON APIs.
-
-> [!IMPORTANT]
-> Boronix is in early alpha. APIs may change before 1.0. Registry publishing is planned after package smoke tests pass. Boronix is not published to npm yet. For now, install from a local tarball or GitHub source.
+Server-first, SSR-first, real HTML templates. No React. No client bundle by default. Bun is the primary runtime, Node is supported.
 
 ## Install
 
-For a new app:
+```bash
+npm i boronix
+```
+
+Or scaffold a new app:
+
+```bash
+npx create-boronix my-app
+cd my-app
+npm install
+npm run dev
+```
+
+With Bun:
 
 ```bash
 bunx create-boronix my-app
@@ -20,22 +33,7 @@ bun install
 bun run dev
 ```
 
-For an existing app:
-
-```bash
-bun add boronix
-```
-
-## Create App
-
-```bash
-bunx create-boronix my-app
-cd my-app
-bun install
-bun run dev
-```
-
-The generated app includes:
+## Generated App Scripts
 
 ```json
 {
@@ -48,20 +46,20 @@ The generated app includes:
 }
 ```
 
-## Commands
+## CLI
 
 ```bash
-boronix dev       # Start development server
+boronix dev       # Start development server with live request log
 boronix build     # Build production manifest
 boronix start     # Start production server
-boronix info      # Print environment information
+boronix routes    # Print route tree
+boronix inspect   # Inspect a specific route
+boronix info      # Print environment info
 boronix doctor    # Check project health
 boronix typegen   # Generate route types
-boronix routes    # List all project routes as a tree
-boronix inspect   # Inspect matched files for a specific route
 ```
 
-### CLI Dev Preview
+### Dev output
 
 ```txt
 ◆ Boronix
@@ -69,45 +67,31 @@ boronix inspect   # Inspect matched files for a specific route
   ✔ mode      dev
   ✔ runtime   bun
   ➜ local     http://localhost:3000
-  ⌂ root      ~/Documents/homework-app
+  ⌂ root      ~/my-app
 
 ✔ ready, serving HTML in 58ms
 ```
 
-### CLI Build Tree Preview
+### Build tree
 
 ```txt
 ◆ Boronix
 
-  ✔ mode      build
-  ✔ runtime   bun
-  ◇ output    .boronix
+  mode      build
+  runtime   bun
+  output    .boronix
 
   app/routes
   │
-  └─ root
-     ├─ ✔ ○  /       page  4ms
-     └─ ✔ ○  /login  page  6ms
+  ├─ root
+  │  ├─ OK page  /        page   4ms
+  │  └─ OK page  /login   page   6ms
+  │
+  └─ exercises
+     ├─ OK page  /exercises       page   3ms
+     └─ OK fn    /api/exercises   api    2ms
 
-✔ built server-rendered app in 41ms
-```
-
-Use Node runtime when needed:
-
-```bash
-boronix dev --runtime node
-boronix build --runtime node
-boronix start --runtime node
-```
-
-## Run The Example
-
-```bash
-bun run dev:basic
-```
-
-```bash
-bun run dev:homework
+built server-rendered app in 41ms
 ```
 
 ## App Structure
@@ -116,80 +100,95 @@ bun run dev:homework
 app/
   routes/
     home/
-      page.html
-      page.ts
+      page.html       ← SSR HTML template
+      page.ts         ← loader (returns data)
     exercises/
       page.html
       page.ts
-      api.ts
-  server/
-  shared/
-  layout.html
-public/
+      api.ts          ← JSON API handler
+      actions.ts      ← form actions
+  layout.html         ← root layout
+public/               ← static assets
 boronix.config.ts
 ```
 
-## Runtime
-
-Bun is the primary runtime. Node has a basic adapter in v0.2.
+## Config
 
 ```ts
 import { defineConfig } from "boronix"
 
 export default defineConfig({
-  runtime: "bun"
+  runtime: "bun",   // or "node"
+  port: 3000,
 })
 ```
-
-Boronix is still alpha software. Expect small breaking fixes before a stable release.
 
 ## Page
 
 ```ts
+// app/routes/home/page.ts
 import { page } from "boronix"
 
 export default page(async () => {
-  return { title: "Dashboard" }
+  return { title: "Home" }
 })
 ```
 
 ```html
+<!-- app/routes/home/page.html -->
 <h1>{{ title }}</h1>
 ```
 
 ## API
 
 ```ts
+// app/routes/exercises/api.ts
 import { api, json } from "boronix"
 
 export const GET = api(async () => {
-  return json({ ok: true })
+  return json({ items: [] })
 })
 ```
 
 ## Action
 
 ```ts
+// app/routes/login/actions.ts
 import { action, fail, redirect } from "boronix"
 
 export const login = action(async ({ form }) => {
   const email = form.string("email")
-
-  if (!email) {
-    return fail({ message: "Missing email" })
-  }
-
-  return redirect("/exercises")
+  if (!email) return fail({ message: "Missing email" })
+  return redirect("/dashboard")
 })
 ```
 
 ```html
 <form method="post" action="?/login">
-  <input name="email" type="email">
+  <input name="email" type="email" />
   <button>Login</button>
 </form>
 ```
 
+## Node Runtime
+
+```bash
+boronix dev --runtime node
+boronix build --runtime node
+boronix start --runtime node
+```
+
+## Run Examples
+
+```bash
+bun run dev:basic
+bun run dev:homework
+```
+
+## Releases
+
+See [CHANGELOG.md](./CHANGELOG.md) and [GitHub Releases](https://github.com/dismonjames/boronix.ts/releases).
+
 ## License
 
-MPL-2.0.
+[MPL-2.0](./LICENSE)
