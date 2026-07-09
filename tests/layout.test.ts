@@ -2,7 +2,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { expect, test } from "bun:test"
-import { renderPageView } from "../packages/goros/src/render/view"
+import { renderPageView } from "../packages/boronix/src/render/view"
 
 test("global layout wraps page with raw slot", () => {
   const root = createLayoutApp()
@@ -95,5 +95,5 @@ test("layout receives page data", () => {
 })
 
 function createLayoutApp(): string {
-  return path.join(os.tmpdir(), `goros-layout-${Date.now()}-${Math.random().toString(16).slice(2)}`)
+  return path.join(os.tmpdir(), `boronix-layout-${Date.now()}-${Math.random().toString(16).slice(2)}`)
 }

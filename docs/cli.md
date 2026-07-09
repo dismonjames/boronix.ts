@@ -1,11 +1,11 @@
-# Goros CLI Reference
+# Boronix CLI Reference
 
-The Goros command-line interface provides tools for development, building, and inspecting your fullstack applications.
+The Boronix command-line interface provides tools for development, building, and inspecting your fullstack applications.
 
 ## Usage
 
 ```bash
-goros <command> [options]
+boronix <command> [options]
 ```
 
 ## Commands
@@ -14,7 +14,7 @@ goros <command> [options]
 Start the development server with live request activity logging.
 
 ```bash
-goros dev [options]
+boronix dev [options]
 ```
 
 **Options:**
@@ -29,10 +29,10 @@ goros dev [options]
 - `--no-color`: Disable terminal colors
 
 ### `build`
-Compile your server-rendered app and generate a production manifest in `.goros`, rendering a route build tree.
+Compile your server-rendered app and generate a production manifest in `.boronix`, rendering a route build tree.
 
 ```bash
-goros build [options]
+boronix build [options]
 ```
 
 **Options:**
@@ -42,10 +42,10 @@ goros build [options]
 - `--no-color`: Disable colors
 
 ### `start`
-Start the production server using the built manifest in `.goros`.
+Start the production server using the built manifest in `.boronix`.
 
 ```bash
-goros start [options]
+boronix start [options]
 ```
 
 **Options:**
@@ -62,7 +62,7 @@ goros start [options]
 List all project routes as a tree.
 
 ```bash
-goros routes [options]
+boronix routes [options]
 ```
 
 **Options:**
@@ -76,7 +76,7 @@ goros routes [options]
 Inspect matched files and parameters for a specific URL route.
 
 ```bash
-goros inspect <url> [options]
+boronix inspect <url> [options]
 ```
 
 ---

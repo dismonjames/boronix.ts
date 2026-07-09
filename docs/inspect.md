@@ -5,7 +5,7 @@ The `inspect` command resolves a specific request URL route, extracting matched 
 ## Usage
 
 ```bash
-goros inspect <pathname> [options]
+boronix inspect <pathname> [options]
 ```
 
 ## Example Output
@@ -13,7 +13,7 @@ goros inspect <pathname> [options]
 ### Matching Dynamic Route
 
 ```txt
-◆ Goros inspect
+◆ Boronix inspect
 
   ◆ /exercises/12
   │
@@ -35,10 +35,10 @@ goros inspect <pathname> [options]
 ### Non-matching Route
 
 ```txt
-✖ Goros error KQ_ROUTE_NOT_FOUND
+✖ Boronix error KQ_ROUTE_NOT_FOUND
 
 No route matched `/missing`.
 
 Hint:
-  Run `goros routes` to see available routes.
+  Run `boronix routes` to see available routes.
 ```

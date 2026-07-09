@@ -3,14 +3,14 @@ import os from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { expect, test } from "bun:test"
-import { createGorosApp } from "../packages/goros/src/core/app"
-import { defaultConfig } from "../packages/goros/src/config/types"
-import { scanRoutes } from "../packages/goros/src/scanner/scan-routes"
+import { createBoronixApp } from "../packages/boronix/src/core/app"
+import { defaultConfig } from "../packages/boronix/src/config/types"
+import { scanRoutes } from "../packages/boronix/src/scanner/scan-routes"
 
 test("serves pages api and dynamic routes", async () => {
-  const root = path.join(os.tmpdir(), `goros-integration-${Date.now()}`)
+  const root = path.join(os.tmpdir(), `boronix-integration-${Date.now()}`)
   const routes = path.join(root, "app", "routes")
-  const kumquatImport = pathToFileURL(path.resolve("packages/goros/src/index.ts")).href
+  const kumquatImport = pathToFileURL(path.resolve("packages/boronix/src/index.ts")).href
 
   mkdirSync(path.join(routes, "home"), { recursive: true })
   mkdirSync(path.join(routes, "exercises", "[id]"), { recursive: true })
@@ -25,7 +25,7 @@ test("serves pages api and dynamic routes", async () => {
   writeFileSync(path.join(root, "public", "style.css"), "body { color: black; }")
 
   const manifest = scanRoutes(routes)
-  const app = createGorosApp({ root, config: defaultConfig, manifest })
+  const app = createBoronixApp({ root, config: defaultConfig, manifest })
 
   const home = await app.fetch(new Request("http://local/"))
   const api = await app.fetch(new Request("http://local/api/exercises"))

@@ -1,10 +1,10 @@
 # Package Publishing Guide
 
-This document describes how to publish Goros packages to the public npm registry.
+This document describes how to publish Boronix packages to the public npm registry.
 
 ## Prerequisites
 
-- Access to the npm registry with authority to publish `goros` and `create-goros`.
+- Access to the npm registry with authority to publish `boronix` and `create-boronix`.
 - Bun installed on the development machine.
 
 ## Step-by-Step Publishing Flow
@@ -27,20 +27,20 @@ bun run smoke:pack
 Verify packed file structure without uploading to npm:
 
 ```bash
-cd packages/goros && npm publish --dry-run
-cd ../create-goros && npm publish --dry-run
+cd packages/boronix && npm publish --dry-run
+cd ../create-boronix && npm publish --dry-run
 ```
 
 ### 4. Publish Packages
-Publish packages sequentially. Since `create-goros` depends on the `goros` framework, publish `goros` first:
+Publish packages sequentially. Since `create-boronix` depends on the `boronix` framework, publish `boronix` first:
 
 ```bash
-# 1. Publish goros framework
-cd packages/goros
+# 1. Publish boronix framework
+cd packages/boronix
 npm publish --access public
 
-# 2. Publish create-goros scaffolder
-cd ../create-goros
+# 2. Publish create-boronix scaffolder
+cd ../create-boronix
 npm publish --access public
 ```
 
@@ -49,4 +49,4 @@ npm publish --access public
 ## Limitations
 
 - If `npm` CLI is missing or not authenticated locally, publishing will fail. Ensure you are logged in via `npm login` prior to execution.
-- If the `goros` package name is already taken or unavailable on the public registry, update the `name` field in `packages/goros/package.json` to a scoped name (e.g., `@scoped/goros`) before publishing.
+- If the `boronix` package name is already taken or unavailable on the public registry, update the `name` field in `packages/boronix/package.json` to a scoped name (e.g., `@scoped/boronix`) before publishing.

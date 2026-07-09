@@ -1,6 +1,6 @@
 # Node Runtime
 
-Goros v0.2 includes a basic Node runtime adapter.
+Boronix v0.2 includes a basic Node runtime adapter.
 
 ```ts
 export default defineConfig({
@@ -11,8 +11,8 @@ export default defineConfig({
 Or override from the CLI:
 
 ```bash
-goros dev --runtime node
-goros start --runtime node
+boronix dev --runtime node
+boronix start --runtime node
 ```
 
 The adapter bridges Node `IncomingMessage` and `ServerResponse` to Web `Request` and `Response`.

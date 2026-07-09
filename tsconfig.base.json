@@ -11,7 +11,7 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "paths": {
-      "goros": ["./packages/goros/src/index.ts"]
+      "boronix": ["./packages/boronix/src/index.ts"]
     }
   }
 }

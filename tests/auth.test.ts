@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
-import { createAuth, AuthRequiredError } from "../packages/goros/src/core/auth"
-import { createSession } from "../packages/goros/src/core/session"
-import { defaultConfig } from "../packages/goros/src/config/types"
+import { createAuth, AuthRequiredError } from "../packages/boronix/src/core/auth"
+import { createSession } from "../packages/boronix/src/core/session"
+import { defaultConfig } from "../packages/boronix/src/config/types"
 
 const sessionConfig = {
   ...defaultConfig.session,

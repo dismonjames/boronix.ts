@@ -1,4 +1,4 @@
-# Goros v0.2.4
+# Boronix v0.2.4
 
 This release focuses on publish readiness.
 
@@ -7,7 +7,7 @@ This release focuses on publish readiness.
 - Package-level README/LICENSE
 - Release check script
 - Tarball smoke test script
-- create-goros non-interactive smoke flow
+- create-boronix non-interactive smoke flow
 - Publishing docs
 
 ## Verify
@@ -18,4 +18,4 @@ bun run smoke:pack
 
 ## Notes
 
-Goros is still alpha. APIs may change before 1.0.
+Boronix is still alpha. APIs may change before 1.0.

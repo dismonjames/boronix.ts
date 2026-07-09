@@ -1,13 +1,14 @@
 {
-  "name": "goros-basic-example",
+  "name": "boronix-basic-example",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "goros dev",
-    "build": "goros build",
-    "start": "goros start"
+    "dev": "boronix dev",
+    "build": "boronix build",
+    "start": "boronix start"
   },
   "dependencies": {
-    "goros": "workspace:*"
-  }
+    "boronix": "workspace:*"
+  },
+  "version": "0.2.6"
 }

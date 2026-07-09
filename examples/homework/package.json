@@ -1,14 +1,15 @@
 {
-  "name": "goros-homework-example",
+  "name": "boronix-homework-example",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "goros dev",
-    "dev:node": "goros dev --runtime node",
-    "build": "goros build",
-    "start": "goros start"
+    "dev": "boronix dev",
+    "dev:node": "boronix dev --runtime node",
+    "build": "boronix build",
+    "start": "boronix start"
   },
   "dependencies": {
-    "goros": "workspace:*"
-  }
+    "boronix": "workspace:*"
+  },
+  "version": "0.2.6"
 }

@@ -14,7 +14,7 @@ function runCmd(cmd: string) {
 }
 
 // 1. Run tests
-const skipTests = process.env.GOROS_SKIP_TESTS === "1" || process.env.KUMQUAT_SKIP_TESTS === "1"
+const skipTests = process.env.BORONIX_SKIP_TESTS === "1" || process.env.GOROS_SKIP_TESTS === "1" || process.env.KUMQUAT_SKIP_TESTS === "1"
 if (!skipTests) {
   if (!runCmd("bun test")) {
     console.error("✖ tests failed")
@@ -41,7 +41,7 @@ console.log("✔ build passed")
 
 // 4. Verify package metadata
 const rootDir = path.resolve(".")
-const packages = ["goros", "create-goros"]
+const packages = ["boronix", "create-boronix"]
 
 for (const pkgName of packages) {
   const pkgPath = path.join(rootDir, "packages", pkgName, "package.json")
@@ -57,8 +57,8 @@ for (const pkgName of packages) {
     process.exit(1)
   }
 
-  if (pkg.version !== "0.2.5") {
-    console.error(`✖ version mismatch for ${pkgName}: expected 0.2.5, found ${pkg.version}`)
+  if (pkg.version !== "0.2.6") {
+    console.error(`✖ version mismatch for ${pkgName}: expected 0.2.6, found ${pkg.version}`)
     process.exit(1)
   }
 
@@ -72,7 +72,7 @@ for (const pkgName of packages) {
     process.exit(1)
   }
 
-  if (pkg.repository.url !== "git+ssh://git@github.com/dismonjames/goros.ts.git") {
+  if (pkg.repository.url !== "git+ssh://git@github.com/dismonjames/boronix.ts.git") {
     console.error(`✖ repository URL mismatch for ${pkgName}: found ${pkg.repository.url}`)
     process.exit(1)
   }
@@ -91,7 +91,7 @@ for (const pkgName of packages) {
   }
 
   // Verify dist files exist
-  const filesToCheck = pkgName === "goros" 
+  const filesToCheck = pkgName === "boronix" 
     ? ["dist/index.js", "dist/index.d.ts", "dist/cli/main.js"]
     : ["dist/index.js", "dist/index.d.ts"]
 

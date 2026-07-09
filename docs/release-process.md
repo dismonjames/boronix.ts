@@ -1,17 +1,17 @@
 # Release Process
 
-This document describes the workflow for tagging, documenting, and releasing a new version of Goros.
+This document describes the workflow for tagging, documenting, and releasing a new version of Boronix.
 
 ## Release Workflow
 
 ### 1. Update Versions
 Bump the package versions in all package descriptors:
-- `packages/goros/package.json`
-- `packages/create-goros/package.json`
-- Scaffolding target versions in `packages/create-goros/src/index.ts`
+- `packages/boronix/package.json`
+- `packages/create-boronix/package.json`
+- Scaffolding target versions in `packages/create-boronix/src/index.ts`
 - Template default files:
-  - `packages/create-goros/src/templates/basic/package.json`
-  - `packages/create-goros/src/templates/homework/package.json`
+  - `packages/create-boronix/src/templates/basic/package.json`
+  - `packages/create-boronix/src/templates/homework/package.json`
 
 ### 2. Update CHANGELOG
 Document all new changes under the corresponding version heading in `CHANGELOG.md`.

@@ -1,4 +1,4 @@
-import { notFound, page } from "goros"
+import { notFound, page } from "boronix"
 import { findExercise } from "../../../server/exercises"
 
 export default page(async ({ params }) => {

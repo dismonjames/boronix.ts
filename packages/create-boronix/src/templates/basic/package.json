@@ -1,0 +1,14 @@
+{
+  "name": "my-boronix-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "boronix dev",
+    "build": "boronix build",
+    "start": "boronix start"
+  },
+  "dependencies": {
+    "boronix": "^0.2.6"
+  },
+  "version": "0.2.6"
+}

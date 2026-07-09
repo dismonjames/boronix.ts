@@ -3,7 +3,7 @@ import { mkdirSync, rmSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
 
-const mainCliPath = path.resolve("packages/goros/src/cli/main.ts")
+const mainCliPath = path.resolve("packages/boronix/src/cli/main.ts")
 
 test("invalid runtime flag gives useful cli error", () => {
   const result = Bun.spawnSync({
@@ -20,7 +20,7 @@ test("invalid runtime flag gives useful cli error", () => {
 })
 
 test("missing production manifest gives useful start error", () => {
-  const tempDir = path.join(os.tmpdir(), `goros-start-err-${Date.now()}`)
+  const tempDir = path.join(os.tmpdir(), `boronix-start-err-${Date.now()}`)
   mkdirSync(tempDir, { recursive: true })
 
   try {
@@ -41,7 +41,7 @@ test("missing production manifest gives useful start error", () => {
 })
 
 test("missing app routes gives useful build error", () => {
-  const tempDir = path.join(os.tmpdir(), `goros-build-err-${Date.now()}`)
+  const tempDir = path.join(os.tmpdir(), `boronix-build-err-${Date.now()}`)
   mkdirSync(tempDir, { recursive: true })
 
   try {

@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
-import { initUiSettings, isUnicodeEnabled } from "../packages/goros/src/cli/ui/terminal"
-import { symbols } from "../packages/goros/src/cli/ui/symbols"
+import { initUiSettings, isUnicodeEnabled } from "../packages/boronix/src/cli/ui/terminal"
+import { symbols } from "../packages/boronix/src/cli/ui/symbols"
 
 test("cli theme overrides disable colors and unicode", () => {
   const oldTerm = process.env.TERM

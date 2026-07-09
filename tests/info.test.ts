@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import path from "node:path"
 
-const mainCliPath = path.resolve("packages/goros/src/cli/main.ts")
+const mainCliPath = path.resolve("packages/boronix/src/cli/main.ts")
 
 test("info command includes environment details", () => {
   const result = Bun.spawnSync({
@@ -14,7 +14,7 @@ test("info command includes environment details", () => {
   const stdout = new TextDecoder().decode(result.stdout)
   expect(stdout).toContain("system")
   expect(stdout).toContain("binaries")
-  expect(stdout).toContain("goros")
+  expect(stdout).toContain("boronix")
   expect(stdout).toContain("project")
   expect(stdout).toContain("bun")
   expect(stdout).toContain("node")

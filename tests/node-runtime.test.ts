@@ -1,12 +1,12 @@
 import http from "node:http"
 import { expect, test } from "bun:test"
-import { nodeRequestToWebRequest, writeWebResponse } from "../packages/goros/src/runtime/node"
+import { nodeRequestToWebRequest, writeWebResponse } from "../packages/boronix/src/runtime/node"
 
 test("node runtime bridge handles basic GET responses", async () => {
   const server = createBridgeServer(async () => new Response("hello", {
     status: 201,
     headers: {
-      "x-goros": "node"
+      "x-boronix": "node"
     }
   }))
 
@@ -14,7 +14,7 @@ test("node runtime bridge handles basic GET responses", async () => {
   const response = await fetch(url)
 
   expect(response.status).toBe(201)
-  expect(response.headers.get("x-goros")).toBe("node")
+  expect(response.headers.get("x-boronix")).toBe("node")
   expect(await response.text()).toBe("hello")
 
   server.close()

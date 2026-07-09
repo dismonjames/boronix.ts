@@ -5,7 +5,7 @@ The `routes` command displays all registered page, API, and action routes define
 ## Usage
 
 ```bash
-goros routes [options]
+boronix routes [options]
 ```
 
 ## Options
@@ -19,7 +19,7 @@ goros routes [options]
 ### Default (Tree Layout)
 
 ```txt
-◆ Goros routes
+◆ Boronix routes
 
   app/routes
   │

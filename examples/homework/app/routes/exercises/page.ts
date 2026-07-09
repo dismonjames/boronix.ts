@@ -1,4 +1,4 @@
-import { page } from "goros"
+import { page } from "boronix"
 import { exercises } from "../../server/exercises"
 
 export default page(async () => {

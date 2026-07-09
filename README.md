@@ -1,20 +1,20 @@
-# Goros
+# Boronix
 
-Goros is an experimental HTML-first fullstack framework for TypeScript.
+Boronix is an experimental HTML-first fullstack framework for TypeScript.
 
 It is server-first, SSR-first, and uses real HTML templates. Client JavaScript is not automatic, React is not part of the framework, and Bun is the first runtime target.
 
-Goros is dogfooded through a small homework app using login, dashboard-style HTML pages, local actions, and JSON APIs.
+Boronix is dogfooded through a small homework app using login, dashboard-style HTML pages, local actions, and JSON APIs.
 
 > [!IMPORTANT]
-> Goros is in early alpha. APIs may change before 1.0. Registry publishing is planned after package smoke tests pass. Goros is not published to npm yet. For now, install from a local tarball or GitHub source.
+> Boronix is in early alpha. APIs may change before 1.0. Registry publishing is planned after package smoke tests pass. Boronix is not published to npm yet. For now, install from a local tarball or GitHub source.
 
 ## Install
 
 For a new app:
 
 ```bash
-bunx create-goros my-app
+bunx create-boronix my-app
 cd my-app
 bun install
 bun run dev
@@ -23,13 +23,13 @@ bun run dev
 For an existing app:
 
 ```bash
-bun add goros
+bun add boronix
 ```
 
 ## Create App
 
 ```bash
-bunx create-goros my-app
+bunx create-boronix my-app
 cd my-app
 bun install
 bun run dev
@@ -40,10 +40,10 @@ The generated app includes:
 ```json
 {
   "scripts": {
-    "dev": "goros dev",
-    "build": "goros build",
-    "start": "goros start",
-    "doctor": "goros doctor"
+    "dev": "boronix dev",
+    "build": "boronix build",
+    "start": "boronix start",
+    "doctor": "boronix doctor"
   }
 }
 ```
@@ -51,20 +51,20 @@ The generated app includes:
 ## Commands
 
 ```bash
-goros dev       # Start development server
-goros build     # Build production manifest
-goros start     # Start production server
-goros info      # Print environment information
-goros doctor    # Check project health
-goros typegen   # Generate route types
-goros routes    # List all project routes as a tree
-goros inspect   # Inspect matched files for a specific route
+boronix dev       # Start development server
+boronix build     # Build production manifest
+boronix start     # Start production server
+boronix info      # Print environment information
+boronix doctor    # Check project health
+boronix typegen   # Generate route types
+boronix routes    # List all project routes as a tree
+boronix inspect   # Inspect matched files for a specific route
 ```
 
 ### CLI Dev Preview
 
 ```txt
-◆ Goros
+◆ Boronix
 
   ✔ mode      dev
   ✔ runtime   bun
@@ -77,11 +77,11 @@ goros inspect   # Inspect matched files for a specific route
 ### CLI Build Tree Preview
 
 ```txt
-◆ Goros
+◆ Boronix
 
   ✔ mode      build
   ✔ runtime   bun
-  ◇ output    .goros
+  ◇ output    .boronix
 
   app/routes
   │
@@ -95,9 +95,9 @@ goros inspect   # Inspect matched files for a specific route
 Use Node runtime when needed:
 
 ```bash
-goros dev --runtime node
-goros build --runtime node
-goros start --runtime node
+boronix dev --runtime node
+boronix build --runtime node
+boronix start --runtime node
 ```
 
 ## Run The Example
@@ -126,7 +126,7 @@ app/
   shared/
   layout.html
 public/
-goros.config.ts
+boronix.config.ts
 ```
 
 ## Runtime
@@ -134,19 +134,19 @@ goros.config.ts
 Bun is the primary runtime. Node has a basic adapter in v0.2.
 
 ```ts
-import { defineConfig } from "goros"
+import { defineConfig } from "boronix"
 
 export default defineConfig({
   runtime: "bun"
 })
 ```
 
-Goros is still alpha software. Expect small breaking fixes before a stable release.
+Boronix is still alpha software. Expect small breaking fixes before a stable release.
 
 ## Page
 
 ```ts
-import { page } from "goros"
+import { page } from "boronix"
 
 export default page(async () => {
   return { title: "Dashboard" }
@@ -160,7 +160,7 @@ export default page(async () => {
 ## API
 
 ```ts
-import { api, json } from "goros"
+import { api, json } from "boronix"
 
 export const GET = api(async () => {
   return json({ ok: true })
@@ -170,7 +170,7 @@ export const GET = api(async () => {
 ## Action
 
 ```ts
-import { action, fail, redirect } from "goros"
+import { action, fail, redirect } from "boronix"
 
 export const login = action(async ({ form }) => {
   const email = form.string("email")

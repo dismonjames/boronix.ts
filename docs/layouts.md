@@ -1,6 +1,6 @@
 # Layouts
 
-Goros v0.2 supports nested `layout.html` files.
+Boronix v0.2 supports nested `layout.html` files.
 
 ```txt
 app/layout.html
@@ -8,7 +8,7 @@ app/routes/dashboard/layout.html
 app/routes/dashboard/settings/layout.html
 ```
 
-For `/dashboard/settings`, Goros renders:
+For `/dashboard/settings`, Boronix renders:
 
 ```txt
 page.html -> dashboard/settings/layout.html -> dashboard/layout.html -> app/layout.html

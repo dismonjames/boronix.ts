@@ -10,5 +10,5 @@ Open `http://localhost:3000/`.
 Create a new app with:
 
 ```bash
-bunx create-goros my-app
+bunx create-boronix my-app
 ```

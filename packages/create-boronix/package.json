@@ -1,0 +1,36 @@
+{
+  "name": "create-boronix",
+  "version": "0.2.6",
+  "description": "Create a new Boronix app.",
+  "type": "module",
+  "license": "MPL-2.0",
+  "bin": {
+    "create-boronix": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "src/templates",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "boronix",
+    "typescript",
+    "create",
+    "scaffold",
+    "starter"
+  ],
+  "homepage": "https://github.com/dismonjames/boronix.ts#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/dismonjames/boronix.ts.git",
+    "directory": "packages/create-boronix"
+  },
+  "bugs": {
+    "url": "https://github.com/dismonjames/boronix.ts/issues"
+  },
+  "scripts": {
+    "build": "rm -rf ./dist && bun build ./src/index.ts --outdir ./dist --target bun && tsc -p tsconfig.json --emitDeclarationOnly",
+    "typecheck": "tsc --noEmit"
+  }
+}

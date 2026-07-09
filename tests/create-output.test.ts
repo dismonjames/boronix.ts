@@ -3,10 +3,10 @@ import { rmSync, existsSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
 
-const generatorScriptPath = path.resolve("packages/create-goros/src/index.ts")
+const generatorScriptPath = path.resolve("packages/create-boronix/src/index.ts")
 
 test("create generator CLI outputs visually styled next steps", () => {
-  const tempDir = path.join(os.tmpdir(), `goros-create-out-${Date.now()}`)
+  const tempDir = path.join(os.tmpdir(), `boronix-create-out-${Date.now()}`)
   const appPath = path.join(tempDir, "my-app")
   
   try {
@@ -18,7 +18,7 @@ test("create generator CLI outputs visually styled next steps", () => {
 
     expect(result.exitCode).toBe(0)
     const stdout = new TextDecoder().decode(result.stdout)
-    expect(stdout).toContain("create-goros")
+    expect(stdout).toContain("create-boronix")
     expect(stdout).toContain("project")
     expect(stdout).toContain("template")
     expect(stdout).toContain("runtime")

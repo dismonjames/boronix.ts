@@ -1,16 +1,16 @@
-# Goros Typegen
+# Boronix Typegen
 
 The `typegen` command scans your routes capsules and automatically generates TypeScript types for your pages, API endpoints, and action form paths.
 
 ## Usage
 
 ```bash
-goros typegen [options]
+boronix typegen [options]
 ```
 
 ## Generated Outputs
 
-Generates `.goros/types/routes.d.ts` containing:
+Generates `.boronix/types/routes.d.ts` containing:
 
 - `PageRoute`: A union of all static and template literal dynamic page routes.
 - `ApiRoute`: A union of all `/api` endpoint routes.

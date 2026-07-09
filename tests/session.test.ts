@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
-import { defaultConfig } from "../packages/goros/src/config/types"
-import { createSession, readSessionData, serializeSessionCookie } from "../packages/goros/src/core/session"
+import { defaultConfig } from "../packages/boronix/src/config/types"
+import { createSession, readSessionData, serializeSessionCookie } from "../packages/boronix/src/core/session"
 
 const sessionConfig = {
   ...defaultConfig.session,

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { isStaticAsset, logRequest } from "../packages/goros/src/cli/ui/activity"
+import { isStaticAsset, logRequest } from "../packages/boronix/src/cli/ui/activity"
 
 test("isStaticAsset detects static file extensions", () => {
   expect(isStaticAsset("/style.css")).toBe(true)

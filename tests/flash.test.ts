@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
-import { createFlash } from "../packages/goros/src/core/flash"
-import { createSession } from "../packages/goros/src/core/session"
-import { defaultConfig } from "../packages/goros/src/config/types"
+import { createFlash } from "../packages/boronix/src/core/flash"
+import { createSession } from "../packages/boronix/src/core/session"
+import { defaultConfig } from "../packages/boronix/src/config/types"
 
 const sessionConfig = {
   ...defaultConfig.session,

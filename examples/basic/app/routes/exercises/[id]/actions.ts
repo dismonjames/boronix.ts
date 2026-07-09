@@ -1,4 +1,4 @@
-import { action, fail } from "goros"
+import { action, fail } from "boronix"
 
 export const submit = action(async ({ form }) => {
   const answer = form.string("answer")

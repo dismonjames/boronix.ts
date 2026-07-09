@@ -1,5 +1,5 @@
 {
-  "name": "goros-workspace",
+  "name": "boronix-workspace",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -10,16 +10,17 @@
     "build": "bun run scripts/build.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
-    "pack:goros": "cd packages/goros && bun pm pack",
-    "pack:create": "cd packages/create-goros && bun pm pack",
+    "pack:boronix": "cd packages/boronix && bun pm pack",
+    "pack:create": "cd packages/create-boronix && bun pm pack",
     "release:check": "bun run scripts/release-check.ts",
     "smoke:pack": "bun run scripts/smoke-pack.ts",
-    "dev:basic": "bun run packages/goros/src/cli/main.ts dev --root examples/basic",
-    "start:basic": "bun run packages/goros/src/cli/main.ts start --root examples/basic",
-    "dev:homework": "bun run packages/goros/src/cli/main.ts dev --root examples/homework"
+    "dev:basic": "bun run packages/boronix/src/cli/main.ts dev --root examples/basic",
+    "start:basic": "bun run packages/boronix/src/cli/main.ts start --root examples/basic",
+    "dev:homework": "bun run packages/boronix/src/cli/main.ts dev --root examples/homework"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "typescript": "latest"
-  }
+  },
+  "version": "0.2.6"
 }

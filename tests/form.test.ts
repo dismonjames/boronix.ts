@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { createActionForm } from "../packages/goros/src/route/action"
+import { createActionForm } from "../packages/boronix/src/route/action"
 
 test("required validates missing values", () => {
   const form = createForm({})

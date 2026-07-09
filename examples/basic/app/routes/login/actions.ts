@@ -1,4 +1,4 @@
-import { action, fail, redirect } from "goros"
+import { action, fail, redirect } from "boronix"
 
 export const login = action(async ({ form }) => {
   const email = form.string("email")

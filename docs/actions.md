@@ -10,7 +10,7 @@ Actions handle POST forms local to the current route.
 ```
 
 ```ts
-import { action, fail, redirect } from "goros"
+import { action, fail, redirect } from "boronix"
 
 export const login = action(async ({ form }) => {
   if (!form.string("email")) return fail({ message: "Missing email" })

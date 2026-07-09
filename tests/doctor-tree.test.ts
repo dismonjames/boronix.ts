@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import path from "node:path"
 
-const mainCliPath = path.resolve("packages/goros/src/cli/main.ts")
+const mainCliPath = path.resolve("packages/boronix/src/cli/main.ts")
 
 test("doctor outputs checklist with tree branch rails", () => {
   const result = Bun.spawnSync({
@@ -16,7 +16,7 @@ test("doctor outputs checklist with tree branch rails", () => {
   expect(stdout).toContain("project")
   expect(stdout).toContain("├─")
   expect(stdout).toContain("package.json found")
-  expect(stdout).toContain("goros.config.ts found")
+  expect(stdout).toContain("boronix.config.ts found")
   expect(stdout).toContain("runtime")
   expect(stdout).toContain("project looks healthy")
 })

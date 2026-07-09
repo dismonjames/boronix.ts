@@ -1,9 +1,9 @@
 # Config
 
-`goros.config.ts` is the only config file.
+`boronix.config.ts` is the only config file.
 
 ```ts
-import { defineConfig } from "goros"
+import { defineConfig } from "boronix"
 
 export default defineConfig({
   runtime: "bun",
