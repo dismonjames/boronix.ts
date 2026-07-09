@@ -41,7 +41,8 @@ The generated app includes:
   "scripts": {
     "dev": "kumquat dev",
     "build": "kumquat build",
-    "start": "kumquat start"
+    "start": "kumquat start",
+    "doctor": "kumquat doctor"
   }
 }
 ```
@@ -49,9 +50,27 @@ The generated app includes:
 ## Commands
 
 ```bash
-kumquat dev
-kumquat build
-kumquat start
+kumquat dev       # Start development server
+kumquat build     # Build production manifest
+kumquat start     # Start production server
+kumquat info      # Print environment information
+kumquat doctor    # Check project health
+kumquat typegen   # Generate route types
+```
+
+### CLI Dev TUI Preview
+
+```txt
+◇ Kumquat dev
+
+  runtime  bun
+  local    http://localhost:3000
+
+  routes
+  ○  GET   /              page
+  ƒ  GET   /api/exercises api
+
+✓ ready, serving HTML in 74ms
 ```
 
 Use Node runtime when needed:

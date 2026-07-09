@@ -1,6 +1,6 @@
 {
   "name": "kumquat",
-  "version": "0.2.1",
+  "version": "0.2.2-cli",
   "description": "HTML-first fullstack framework for TypeScript.",
   "type": "module",
   "license": "MPL-2.0",

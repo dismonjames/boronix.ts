@@ -6,27 +6,66 @@ import { createKumquatApp } from "../../core/app"
 import { KumquatUserError } from "../../core/errors"
 import { selectRuntime } from "../../runtime/select"
 import type { BuildManifest } from "../../build/manifest"
+import { initUiSettings, areColorsEnabled } from "../ui/terminal"
+import { colors } from "../ui/colors"
+import { symbols } from "../ui/symbols"
+import { formatHeader } from "../ui/format"
 
-export async function startCommand(root: string, runtimeOverride?: ResolvedKumquatConfig["runtime"]): Promise<void> {
+export async function startCommand(
+  root: string,
+  options: {
+    runtime?: ResolvedKumquatConfig["runtime"] | undefined
+    port?: number | undefined
+    host?: string | undefined
+    plain?: boolean | undefined
+    noColor?: boolean | undefined
+  } = {}
+): Promise<void> {
+  initUiSettings({ plain: options.plain, noColor: options.noColor })
+
   const manifestPath = path.join(root, ".kumquat", "manifest.json")
 
   if (!existsSync(manifestPath)) {
     throw new KumquatUserError("No production manifest found.", {
-      hint: "Run `kumquat build` first."
+      code: "KQ_MANIFEST_MISSING",
+      hint: "Run `kumquat build` before `kumquat start`."
     })
   }
 
   const config = await loadConfig(root)
-  const runtimeName = runtimeOverride ?? config.runtime
+  const runtimeName = options.runtime ?? config.runtime
+  const port = options.port ?? config.server.port
+  const host = options.host ?? config.server.host
+
   const runtime = selectRuntime(runtimeName)
   const buildManifest = JSON.parse(readFileSync(manifestPath, "utf8")) as BuildManifest
   const app = createKumquatApp({ root, config, manifest: buildManifest.routes })
 
-  runtime.serve({
-    port: config.server.port,
-    host: config.server.host,
-    fetch: app.fetch
-  })
+  try {
+    runtime.serve({
+      port,
+      host,
+      fetch: app.fetch
+    })
+  } catch (err: any) {
+    throw err
+  }
 
-  console.log(`Kumquat server listening on http://${config.server.host}:${config.server.port} with ${runtimeName}`)
+  const isPlain = !areColorsEnabled()
+  console.log(formatHeader("start", isPlain))
+  console.log("")
+
+  if (isPlain) {
+    console.log(`runtime: ${runtimeName}`)
+    console.log(`manifest: .kumquat/manifest.json`)
+    console.log(`local: http://${host === "0.0.0.0" ? "localhost" : host}:${port}`)
+    console.log("")
+    console.log("server started")
+  } else {
+    console.log(`  ${colors.muted("runtime")}   ${colors.bold(runtimeName)}`)
+    console.log(`  ${colors.muted("manifest")}  ${colors.bold(".kumquat/manifest.json")}`)
+    console.log(`  ${colors.muted("local")}     ${colors.bold(`http://${host === "0.0.0.0" ? "localhost" : host}:${port}`)}`)
+    console.log("")
+    console.log(`${colors.success(symbols.success())} ${colors.bold("server started")}`)
+  }
 }

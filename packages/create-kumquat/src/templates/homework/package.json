@@ -1,9 +1,10 @@
 {
-  "name": "my-kumquat-app",
+  "name": "kumquat-homework-example",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "kumquat dev",
+    "dev:node": "kumquat dev --runtime node",
     "build": "kumquat build",
     "start": "kumquat start"
   },

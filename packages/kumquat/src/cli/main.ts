@@ -1,62 +1,130 @@
 #!/usr/bin/env bun
+import { existsSync, readFileSync } from "node:fs"
 import path from "node:path"
+import { fileURLToPath } from "node:url"
+import { parseCliArgs, type CliArgs } from "./args"
 import { buildCommand } from "./commands/build"
 import { devCommand } from "./commands/dev"
 import { startCommand } from "./commands/start"
-import { formatKumquatError } from "../core/errors"
-import type { ResolvedKumquatConfig } from "../config/types"
+import { infoCommand } from "./commands/info"
+import { doctorCommand } from "./commands/doctor"
+import { typegenCommand } from "./commands/typegen"
+import { initUiSettings } from "./ui/terminal"
+import { formatRootHelp, formatCommandHelp } from "./ui/format"
+import { formatCliError } from "./ui/errors"
 
-type CliOptions = {
-  command: string
-  root: string
-  runtime?: ResolvedKumquatConfig["runtime"]
+function getVersion(): string {
+  try {
+    const cliDir = path.dirname(fileURLToPath(import.meta.url))
+    let dir = cliDir
+    while (dir && dir !== path.dirname(dir)) {
+      const pkgPath = path.join(dir, "package.json")
+      if (existsSync(pkgPath)) {
+        const pkg = JSON.parse(readFileSync(pkgPath, "utf8"))
+        if (pkg.name === "kumquat") {
+          return pkg.version
+        }
+      }
+      dir = path.dirname(dir)
+    }
+  } catch {}
+  return "0.2.2"
 }
 
 async function main(argv: string[]): Promise<void> {
-  const options = parseArgs(argv)
+  let parsed: CliArgs
+  try {
+    parsed = parseCliArgs(argv)
+  } catch (err: any) {
+    initUiSettings()
+    console.error(formatCliError(err))
+    process.exit(1)
+  }
 
-  if (options.command === "dev") {
-    await devCommand(options.root, options.runtime)
+  initUiSettings({ plain: parsed.plain, noColor: parsed.noColor })
+
+  if (parsed.version) {
+    console.log(getVersion())
     return
   }
 
-  if (options.command === "build") {
-    await buildCommand(options.root, options.runtime)
+  if (parsed.help) {
+    if (parsed.command) {
+      console.log(formatCommandHelp(parsed.command))
+    } else {
+      console.log(formatRootHelp())
+    }
     return
   }
 
-  if (options.command === "start") {
-    await startCommand(options.root, options.runtime)
+  if (!parsed.command) {
+    console.log(formatRootHelp())
+    process.exit(1)
+  }
+
+  if (parsed.command === "dev") {
+    await devCommand(parsed.root, {
+      runtime: parsed.runtime,
+      port: parsed.port,
+      host: parsed.host,
+      plain: parsed.plain,
+      noColor: parsed.noColor
+    })
     return
   }
 
-  console.error("Usage: kumquat <dev|build|start> [--root <dir>] [--runtime <bun|node|deno>]")
+  if (parsed.command === "build") {
+    await buildCommand(parsed.root, {
+      runtime: parsed.runtime,
+      plain: parsed.plain,
+      noColor: parsed.noColor
+    })
+    return
+  }
+
+  if (parsed.command === "start") {
+    await startCommand(parsed.root, {
+      runtime: parsed.runtime,
+      port: parsed.port,
+      host: parsed.host,
+      plain: parsed.plain,
+      noColor: parsed.noColor
+    })
+    return
+  }
+
+  if (parsed.command === "info") {
+    await infoCommand(parsed.root, {
+      plain: parsed.plain,
+      noColor: parsed.noColor
+    })
+    return
+  }
+
+  if (parsed.command === "doctor") {
+    await doctorCommand(parsed.root, {
+      plain: parsed.plain,
+      noColor: parsed.noColor
+    })
+    return
+  }
+
+  if (parsed.command === "typegen") {
+    await typegenCommand(parsed.root, {
+      plain: parsed.plain,
+      noColor: parsed.noColor
+    })
+    return
+  }
+
+  // Unknown command
+  const error = new Error(`Unknown command: ${parsed.command}`)
+  console.error(formatCliError(error))
+  console.log("\n" + formatRootHelp())
   process.exit(1)
 }
 
-function parseArgs(argv: string[]): CliOptions {
-  const command = argv[2] ?? "dev"
-  const rootFlagIndex = argv.indexOf("--root")
-  const root = rootFlagIndex >= 0 ? argv[rootFlagIndex + 1] : "."
-  const runtimeFlagIndex = argv.indexOf("--runtime")
-  const runtime = runtimeFlagIndex >= 0 ? parseRuntime(argv[runtimeFlagIndex + 1]) : undefined
-
-  return {
-    command,
-    root: path.resolve(root ?? "."),
-    ...(runtime ? { runtime } : {})
-  }
-}
-
-function parseRuntime(value: string | undefined): ResolvedKumquatConfig["runtime"] | undefined {
-  if (value === "bun" || value === "node" || value === "deno") return value
-  if (value) {
-    throw new Error(`Invalid runtime: ${value}`)
-  }
-  return undefined
-}
-
 main(process.argv).catch((error: unknown) => {
-  console.error(formatKumquatError(error))
+  console.error(formatCliError(error))
   process.exit(1)
 })
