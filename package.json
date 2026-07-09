@@ -1,0 +1,20 @@
+{
+  "name": "kumquat-workspace",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
+  "scripts": {
+    "build": "bun run scripts/build.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "dev:basic": "bun run packages/kumquat/src/cli/main.ts dev --root examples/basic",
+    "start:basic": "bun run packages/kumquat/src/cli/main.ts start --root examples/basic"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "latest"
+  }
+}
