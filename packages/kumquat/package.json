@@ -1,0 +1,23 @@
+{
+  "name": "kumquat",
+  "version": "0.1.0",
+  "description": "HTML-first fullstack framework for TypeScript.",
+  "type": "module",
+  "license": "MPL-2.0",
+  "bin": {
+    "kumquat": "./dist/cli/main.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "bun build ./src/index.ts ./src/cli/main.ts --outdir ./dist --target bun",
+    "typecheck": "tsc --noEmit"
+  }
+}
