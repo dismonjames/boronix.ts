@@ -2,6 +2,7 @@ import { pathToFileURL } from "node:url"
 import { createBodyReader } from "./request"
 import { htmlResponse, isFailResult, notFound } from "./response"
 import { matchRoute } from "./router"
+import { createAuth, type Auth } from "./auth"
 import { commitSession, createSession, type Session } from "./session"
 import { createActionForm } from "../route/action"
 import { renderPageView } from "../render/view"
@@ -23,6 +24,7 @@ export function createKumquatApp(options: KumquatAppOptions): { fetch(req: Reque
     async fetch(req: Request): Promise<Response> {
       const url = new URL(req.url)
       const session = createSession(req, options.config.session)
+      const auth = createAuth(session)
       const manifest = options.dev ? scanRoutes(resolvePath(options.root, options.config.app.routesDir)) : options.manifest ?? []
       const publicResponse = await servePublic(resolvePath(options.root, options.config.app.publicDir), url)
 
@@ -32,9 +34,9 @@ export function createKumquatApp(options: KumquatAppOptions): { fetch(req: Reque
 
       let response: Response
       if (url.pathname.startsWith("/api/")) {
-        response = await handleApi(req, url, manifest, session)
+        response = await handleApi(req, url, manifest, session, auth)
       } else {
-        response = await handlePage(req, url, manifest, options, session)
+        response = await handlePage(req, url, manifest, options, session, auth)
       }
 
       return commitSession(response, session)
@@ -42,7 +44,7 @@ export function createKumquatApp(options: KumquatAppOptions): { fetch(req: Reque
   }
 }
 
-async function handleApi(req: Request, url: URL, manifest: RouteManifest, session: Session): Promise<Response> {
+async function handleApi(req: Request, url: URL, manifest: RouteManifest, session: Session, auth: Auth): Promise<Response> {
   const match = matchRoute(manifest, url.pathname, "api")
   if (!match?.item.apiModule) {
     return notFound()
@@ -61,6 +63,7 @@ async function handleApi(req: Request, url: URL, manifest: RouteManifest, sessio
     params: match.params,
     query: url.searchParams,
     session,
+    auth,
     body: createBodyReader(req)
   })
 }
@@ -70,7 +73,8 @@ async function handlePage(
   url: URL,
   manifest: RouteManifest,
   options: KumquatAppOptions,
-  session: Session
+  session: Session,
+  auth: Auth
 ): Promise<Response> {
   const match = matchRoute(manifest, url.pathname, "page")
   if (!match?.item.pageHtml) {
@@ -78,14 +82,14 @@ async function handlePage(
   }
 
   if (req.method === "POST" && url.search.startsWith("?/")) {
-    return handleAction(req, url, match, options, session)
+    return handleAction(req, url, match, options, session, auth)
   }
 
   if (req.method !== "GET" && req.method !== "HEAD") {
     return new Response("Method Not Allowed", { status: 405 })
   }
 
-  return renderPage(req, url, match, options, session)
+  return renderPage(req, url, match, options, session, auth)
 }
 
 async function handleAction(
@@ -93,7 +97,8 @@ async function handleAction(
   url: URL,
   match: NonNullable<ReturnType<typeof matchRoute>>,
   options: KumquatAppOptions,
-  session: Session
+  session: Session,
+  auth: Auth
 ): Promise<Response> {
   const actionName = decodeURIComponent(url.search.slice(2))
 
@@ -114,11 +119,12 @@ async function handleAction(
     params: match.params,
     query: url.searchParams,
     session,
+    auth,
     form: createActionForm(await req.formData())
   })
 
   if (isFailResult(result)) {
-    return renderPage(req, url, match, options, session, result.data, result.status)
+    return renderPage(req, url, match, options, session, auth, result.data, result.status)
   }
 
   return result
@@ -130,6 +136,7 @@ async function renderPage(
   match: NonNullable<ReturnType<typeof matchRoute>>,
   options: KumquatAppOptions,
   session: Session,
+  auth: Auth,
   extraData: Record<string, unknown> = {},
   status = 200
 ): Promise<Response> {
@@ -146,6 +153,7 @@ async function renderPage(
         params: match.params,
         query: url.searchParams,
         session,
+        auth,
         user: null
       })
 

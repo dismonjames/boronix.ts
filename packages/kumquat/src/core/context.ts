@@ -1,3 +1,4 @@
+import type { Auth } from "./auth"
 import type { Session } from "./session"
 
 export type BaseContext = {
@@ -6,4 +7,5 @@ export type BaseContext = {
   params: Record<string, string>
   query: URLSearchParams
   session: Session
+  auth: Auth
 }
