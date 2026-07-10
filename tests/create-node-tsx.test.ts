@@ -9,7 +9,7 @@ test("create-boronix adds project-local tsx for Node runtime", async () => {
   try {
     const project = "node-app"
     const proc = Bun.spawn({
-      cmd: ["bun", path.resolve("packages/create-boronix/src/index.ts"), path.join(root, project), "--runtime", "node", "--db", "none", "--no-install", "--no-git"],
+      cmd: [process.execPath, path.resolve("packages/create-boronix/dist/index.js"), path.join(root, project), "--runtime", "node", "--db", "none", "--no-install", "--no-git"],
       cwd: root,
       stdout: "ignore",
       stderr: "ignore"
