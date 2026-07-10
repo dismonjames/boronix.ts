@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.5.0 - Production Build Hardening
+
+- Added production environment validation.
+- Hardened session secret handling.
+- Removed duplicate development secret warnings during builds.
+- Added validated build manifests.
+- Added atomic build output writes.
+- Hardened `boronix start`.
+- Added production-safe error responses.
+- Added request IDs.
+- Added static cache and security headers.
+- Added graceful shutdown handling.
+- Added optional health endpoint.
+- Added `boronix doctor --production`.
+- Added production smoke tests and deployment documentation.
+
 ## v0.4.3 - Runtime Error Overlay Fix
 
 - Routed development runtime errors through the polished Boronix dev overlay.

@@ -5,10 +5,13 @@
   "scripts": {
     "dev": "boronix dev",
     "build": "boronix build",
-    "start": "boronix start"
+    "start": "boronix start",
+    "doctor": "boronix doctor",
+    "doctor:production": "boronix doctor --production",
+    "typegen": "boronix typegen"
   },
   "dependencies": {
     "boronix": "workspace:*"
   },
-  "version": "0.4.3"
+  "version": "0.5.0"
 }

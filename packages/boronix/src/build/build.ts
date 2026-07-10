@@ -18,6 +18,17 @@ export async function build(root: string, runtimeOverride?: ResolvedBoronixConfi
 
   const routesDir = resolvePath(root, config.app.routesDir)
   const routes = scanRoutes(routesDir)
+  
+  if (config.health?.enabled) {
+    const conflict = routes.find(r => r.routePath === config.health.path)
+    if (conflict) {
+      throw new BoronixUserError(`Health check route path "${config.health.path}" conflicts with an application route.`, {
+        code: "KQ_HEALTH_ROUTE_CONFLICT",
+        hint: "Change health.path in boronix.config.ts or remove the conflicting route capsule."
+      })
+    }
+  }
+
   if (routes.length === 0) {
     throw new BoronixUserError("No routes found.", {
       file: config.app.routesDir,
@@ -25,9 +36,18 @@ export async function build(root: string, runtimeOverride?: ResolvedBoronixConfi
     })
   }
 
+  const resolvedRoot = path.resolve(root)
   writeBuildOutput(root, {
-    target: runtimeName,
-    routes
+    version: 1,
+    frameworkVersion: "0.5.0",
+    createdAt: new Date().toISOString(),
+    runtime: runtimeName as "bun" | "node",
+    mode: "production",
+    root: resolvedRoot,
+    routes,
+    output: {
+      directory: ".boronix"
+    }
   })
 
   console.log("Boronix build")

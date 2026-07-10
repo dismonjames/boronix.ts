@@ -3,6 +3,8 @@ import { pathToFileURL } from "node:url"
 import { resolvePath } from "../utils/path"
 import { defaultConfig, type BoronixConfig, type ResolvedBoronixConfig } from "./types"
 
+import { getBoronixMode } from "../core/mode"
+
 export async function loadConfig(root: string): Promise<ResolvedBoronixConfig> {
   let configPath = resolvePath(root, "boronix.config.ts")
   let userConfig: BoronixConfig = {}
@@ -43,17 +45,29 @@ export async function loadConfig(root: string): Promise<ResolvedBoronixConfig> {
       unicode: userConfig.cli?.unicode ?? defaultConfig.cli.unicode,
       requestLog: userConfig.cli?.requestLog ?? defaultConfig.cli.requestLog,
       groupRoutes: userConfig.cli?.groupRoutes ?? defaultConfig.cli.groupRoutes
+    },
+    health: {
+      enabled: userConfig.health?.enabled ?? defaultConfig.health.enabled,
+      path: userConfig.health?.path ?? defaultConfig.health.path
+    },
+    security: {
+      headers: userConfig.security?.headers ?? defaultConfig.security.headers
     }
   }
 }
 
 function resolveSessionSecret(secret: string | undefined): string {
-  if (secret) return secret
+  const resolved = secret || process.env.BORONIX_SESSION_SECRET
+  if (resolved) return resolved
 
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("Missing session.secret. Set session.secret or SESSION_SECRET before running in production.")
+  if (getBoronixMode() === "development") {
+    const globalSymbol = Symbol.for("boronix-warned-session-secret")
+    if (!(globalThis as any)[globalSymbol]) {
+      (globalThis as any)[globalSymbol] = true
+      console.warn("⚠ session.secret is missing. Using an insecure development secret.")
+    }
   }
 
-  console.warn("Boronix session.secret is missing. Using an insecure development secret.")
   return defaultConfig.session.secret
 }
+

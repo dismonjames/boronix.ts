@@ -14,6 +14,8 @@ import { startSpinner, updateSpinner, stopSpinner } from "../ui/spinner"
 import { formatRoutesSummary, getActionNames, getApiMethods, type CliRouteEntry } from "../ui/table"
 import { typegenCommand } from "./typegen"
 
+import { setBoronixMode } from "../../core/mode"
+
 export async function devCommand(
   root: string,
   options: {
@@ -27,6 +29,7 @@ export async function devCommand(
     verbose?: boolean | undefined
   } = {}
 ): Promise<void> {
+  setBoronixMode("development")
   initUiSettings({ plain: options.plain, noColor: options.noColor })
 
   // Run typegen first

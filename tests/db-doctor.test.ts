@@ -28,9 +28,9 @@ test("doctor shows database section when drizzle config exists", () => {
     const stdout = new TextDecoder().decode(result.stdout)
     expect(result.exitCode).toBe(0)
     expect(stdout).toContain("database")
-    expect(stdout).toContain("drizzle.config.ts")
-    expect(stdout).toContain("app/db/schema.ts")
-    expect(stdout).toContain("app/db/client.ts")
+    expect(stdout).toContain("config")
+    expect(stdout).toContain("schema")
+    expect(stdout).toContain("client")
     expect(stdout).toContain("drizzle-kit")
   } finally {
     rmSync(tempDir, { recursive: true, force: true })

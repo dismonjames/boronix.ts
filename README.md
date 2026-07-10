@@ -54,10 +54,34 @@ npm run dev
     "build": "boronix build",
     "start": "boronix start",
     "doctor": "boronix doctor",
+    "doctor:production": "boronix doctor --production",
     "typegen": "boronix typegen"
   }
 }
 ```
+
+## Quick Production Flow
+
+To build and run your application in production:
+
+```bash
+npm create boronix@latest my-app
+cd my-app
+npm install
+
+npm run build
+npm run doctor:production
+npm run start
+```
+
+If you are using the Homework/session template which requires sessions, provide the session secret:
+
+```bash
+BORONIX_SESSION_SECRET="replace-with-a-long-random-secret" npm run start
+```
+> [!NOTE]
+> Writing secrets directly in the shell history is discouraged for real production environments. Use an environment manager or your hosting provider's deployment secrets config.
+
 
 ## CLI
 

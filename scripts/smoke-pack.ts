@@ -6,8 +6,8 @@ import os from "node:os"
 console.log("Running smoke pack test...")
 
 const rootDir = path.resolve(".")
-const boronixTar = path.join(rootDir, "packages/boronix/boronix-0.4.3.tgz")
-const createTar = path.join(rootDir, "packages/create-boronix/create-boronix-0.4.3.tgz")
+const boronixTar = path.join(rootDir, "packages/boronix/boronix-0.5.0.tgz")
+const createTar = path.join(rootDir, "packages/create-boronix/create-boronix-0.5.0.tgz")
 
 // Clean old tarballs if exist
 if (existsSync(boronixTar)) rmSync(boronixTar)
@@ -83,6 +83,19 @@ try {
     process.exit(1)
   }
 
+  // Verify manifest does not contain secrets
+  const manifestContent = readFileSync(manifestFile, "utf8")
+  if (manifestContent.includes("BORONIX_SESSION_SECRET") || manifestContent.includes("boronix-dev-session-secret")) {
+    console.error("✖ Manifest contains secret values")
+    process.exit(1)
+  }
+  console.log("✔ Manifest verified clean of secrets")
+
+  // Run doctor --production
+  console.log("Running bunx boronix doctor --production...")
+  execSync("bunx boronix doctor --production", { cwd: appPath, stdio: "inherit" })
+  console.log("✔ Doctor --production passed")
+
   // Run routes --json
   console.log("Running bunx boronix routes --json...")
   const routesJson = execSync("bunx boronix routes --json", { cwd: appPath }).toString()
@@ -102,6 +115,79 @@ try {
     process.exit(1)
   }
   console.log("✔ Inspect / parsed successfully:", parsedInspect.matched)
+
+  // Start production server and fetch /
+  const smokePort = 3999
+  console.log(`Starting production server on port ${smokePort} for smoke test...`)
+  const serverProc = Bun.spawn({
+    cmd: ["bunx", "boronix", "start", "--port", String(smokePort)],
+    cwd: appPath,
+    stdout: "pipe",
+    stderr: "pipe",
+    env: { ...process.env, BORONIX_SESSION_SECRET: "smoke-test-secret" }
+  })
+
+  // Wait for server to be ready
+  await new Promise(resolve => setTimeout(resolve, 3000))
+
+  try {
+    // Fetch /
+    console.log("Fetching / ...")
+    const homeRes = await fetch(`http://localhost:${smokePort}/`)
+    if (!homeRes.ok) {
+      console.error(`✖ Fetch / returned status ${homeRes.status}`)
+      process.exit(1)
+    }
+    console.log("✔ Fetch / succeeded")
+
+    // Fetch a missing route and verify clean 404
+    console.log("Fetching /nonexistent ...")
+    const notFoundRes = await fetch(`http://localhost:${smokePort}/nonexistent`)
+    if (notFoundRes.status !== 404) {
+      console.error(`✖ Expected 404, got ${notFoundRes.status}`)
+      process.exit(1)
+    }
+    console.log("✔ 404 response verified")
+
+    // Verify request ID header
+    const reqId = homeRes.headers.get("x-boronix-request-id")
+    if (!reqId || !reqId.startsWith("req_")) {
+      console.error("✖ Missing or invalid x-boronix-request-id header")
+      process.exit(1)
+    }
+    console.log("✔ Request ID header verified")
+
+    // Verify security headers in production
+    const cto = homeRes.headers.get("x-content-type-options")
+    if (cto !== "nosniff") {
+      console.error(`✖ Expected X-Content-Type-Options: nosniff, got ${cto}`)
+      process.exit(1)
+    }
+    console.log("✔ Security headers verified")
+
+    // Fetch static asset and verify Cache-Control
+    console.log("Fetching /style.css ...")
+    const staticRes = await fetch(`http://localhost:${smokePort}/style.css`)
+    if (!staticRes.ok) {
+      console.error(`✖ Fetch /style.css returned status ${staticRes.status}`)
+      process.exit(1)
+    }
+    const cacheControl = staticRes.headers.get("cache-control")
+    if (!cacheControl || cacheControl === "no-store") {
+      console.error(`✖ Static asset Cache-Control should be public caching, got: ${cacheControl}`)
+      process.exit(1)
+    }
+    console.log(`✔ Static asset Cache-Control: ${cacheControl}`)
+  } finally {
+    // Gracefully stop the server
+    try {
+      process.kill(serverProc.pid, "SIGTERM")
+    } catch {}
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    try {
+      process.kill(serverProc.pid, "SIGKILL")
+    } catch {}
+  }
 
   console.log("Testing create-boronix rejects SQLite on Node runtime...")
   try {
@@ -193,6 +279,48 @@ try {
     console.error("✖ Postgres scaffold missing postgresql Drizzle config")
     process.exit(1)
   }
+
+  // Test missing build manifest
+  console.log("Testing start without build manifest...")
+  const noBuildPath = path.join(tempDir, "no-build-test")
+  mkdirSync(noBuildPath, { recursive: true })
+  writeFileSync(path.join(noBuildPath, "package.json"), JSON.stringify({ name: "no-build-test", private: true }), "utf8")
+  try {
+    execSync(`bun ${rootDir}/packages/boronix/dist/cli/main.js start --root ${noBuildPath}`, {
+      stdio: "pipe"
+    })
+    console.error("✖ Start without build manifest should fail")
+    process.exit(1)
+  } catch (err: any) {
+    const output = `${err.stdout?.toString() ?? ""}${err.stderr?.toString() ?? ""}`
+    if (!output.includes("KQ_BUILD_OUTPUT_NOT_FOUND") && !output.includes("Could not find .boronix/manifest.json")) {
+      console.error("✖ Missing build manifest error not detected:", output)
+      process.exit(1)
+    }
+  }
+  console.log("✔ Missing build manifest correctly rejected")
+
+  // Test corrupt manifest
+  console.log("Testing start with corrupt manifest...")
+  const corruptPath = path.join(tempDir, "corrupt-manifest-test")
+  mkdirSync(corruptPath, { recursive: true })
+  writeFileSync(path.join(corruptPath, "package.json"), JSON.stringify({ name: "corrupt-test", private: true }), "utf8")
+  mkdirSync(path.join(corruptPath, ".boronix"), { recursive: true })
+  writeFileSync(path.join(corruptPath, ".boronix", "manifest.json"), "{invalid", "utf8")
+  try {
+    execSync(`bun ${rootDir}/packages/boronix/dist/cli/main.js start --root ${corruptPath}`, {
+      stdio: "pipe"
+    })
+    console.error("✖ Start with corrupt manifest should fail")
+    process.exit(1)
+  } catch (err: any) {
+    const output = `${err.stdout?.toString() ?? ""}${err.stderr?.toString() ?? ""}`
+    if (!output.includes("KQ_BUILD_MANIFEST_INVALID") && !output.includes("Build manifest is invalid or corrupt")) {
+      console.error("✖ Corrupt manifest error not detected:", output)
+      process.exit(1)
+    }
+  }
+  console.log("✔ Corrupt manifest correctly rejected")
 
   console.log("✔ smoke-pack test completed successfully!")
 } finally {

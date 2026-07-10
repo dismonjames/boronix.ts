@@ -11,23 +11,23 @@
     },
     "examples/basic": {
       "name": "boronix-basic-example",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "dependencies": {
         "boronix": "workspace:*",
       },
     },
     "examples/homework": {
       "name": "boronix-homework-example",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "dependencies": {
         "boronix": "workspace:*",
       },
     },
     "examples/notes-sqlite": {
       "name": "boronix-notes-sqlite-example",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "dependencies": {
-        "boronix": "^0.4.0",
+        "boronix": "^0.5.0",
         "drizzle-orm": "latest",
       },
       "devDependencies": {
@@ -37,14 +37,14 @@
     },
     "packages/boronix": {
       "name": "boronix",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "bin": {
         "boronix": "dist/cli/main.js",
       },
     },
     "packages/create-boronix": {
       "name": "create-boronix",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "bin": {
         "create-boronix": "dist/index.js",
       },

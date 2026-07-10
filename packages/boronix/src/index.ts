@@ -8,3 +8,5 @@ export type { BoronixConfig } from "./config/types"
 export type { PageContext, PageHandler } from "./route/page"
 export type { ApiContext, ApiHandler } from "./route/api"
 export type { ActionContext, ActionHandler } from "./route/action"
+
+export { readBuildManifest, validateBuildManifest } from "./build/manifest"

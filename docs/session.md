@@ -1,26 +1,32 @@
-# Session
+# Session Hardening in Boronix
 
-Sessions are signed cookie sessions.
+Boronix implements cryptographic cookie sessions. In version 0.5.0, session secret handling is hardened for production safety.
+
+## Configuration
+
+Set `session.secret` in `boronix.config.ts`:
 
 ```ts
 export default defineConfig({
   session: {
-    name: "kq_session",
-    secret: process.env.SESSION_SECRET,
-    maxAge: 60 * 60 * 24 * 7,
-    sameSite: "lax",
-    secure: false
+    secret: process.env.BORONIX_SESSION_SECRET
   }
 })
 ```
 
-Every page, API, and action context receives `session`.
+Or provide `BORONIX_SESSION_SECRET` directly in the environment:
 
-```ts
-session.get("key")
-session.set("key", value)
-session.delete("key")
-session.clear()
+```bash
+BORONIX_SESSION_SECRET="your-highly-secure-random-secret" bun run start
 ```
 
-Production requires a session secret. Development uses an insecure fallback with a warning.
+## Development Behavior
+
+- If the secret is missing in `boronix dev`, a warning is logged **exactly once** per process.
+- Fallback development secret is allowed in dev mode.
+
+## Production Behavior
+
+- In `production` mode, if session or auth usage is detected (meaning code contains `session` or `auth` keywords), a real session secret is strictly required.
+- Refusing to provide a secret triggers `KQ_SESSION_SECRET_MISSING` at start/build/doctor time.
+- Secrets are never leaked to logs, manifest, terminal, or error diagnostics.

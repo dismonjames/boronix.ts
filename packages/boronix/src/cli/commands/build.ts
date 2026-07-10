@@ -13,6 +13,8 @@ import { symbols } from "../ui/symbols"
 import { getActionNames, getApiMethods } from "../ui/table"
 
 import { typegenCommand } from "./typegen"
+import { setBoronixMode } from "../../core/mode"
+import { validateProductionConfig } from "../../config/validation"
 
 type BuildRouteEntry = {
   symbol: "page" | "api" | "action"
@@ -31,6 +33,9 @@ export async function buildCommand(
     noColor?: boolean | undefined
   } = {}
 ): Promise<void> {
+  // 1. Set production mode validation context
+  setBoronixMode("production")
+
   initUiSettings({ plain: options.plain, noColor: options.noColor })
 
   // Run typegen first
@@ -51,8 +56,22 @@ export async function buildCommand(
     })
   }
 
+  // Validate production config
+  validateProductionConfig(root, config, runtimeName)
+
   const routesDir = resolvePath(root, config.app.routesDir)
   const routes = scanRoutes(routesDir)
+
+  if (config.health?.enabled) {
+    const conflict = routes.find(r => r.routePath === config.health.path)
+    if (conflict) {
+      throw new BoronixUserError(`Health check route path "${config.health.path}" conflicts with an application route.`, {
+        code: "KQ_HEALTH_ROUTE_CONFLICT",
+        hint: "Change health.path in boronix.config.ts or remove the conflicting route capsule."
+      })
+    }
+  }
+
   if (routes.length === 0) {
     throw new BoronixUserError("No routes found.", {
       code: "KQ_ROUTES_MISSING",
@@ -178,14 +197,26 @@ export async function buildCommand(
 
   // Write actual build manifest
   writeBuildOutput(root, {
-    target: runtimeName,
-    routes
+    version: 1,
+    frameworkVersion: "0.5.0",
+    createdAt: new Date().toISOString(),
+    runtime: runtimeName as "bun" | "node",
+    mode: "production",
+    root: path.resolve(root),
+    routes,
+    output: {
+      directory: ".boronix"
+    }
   })
 
   const totalDuration = Math.round(performance.now() - startTime)
   if (isPlain) {
+    console.log("✔ validated production configuration")
+    console.log("✔ wrote build manifest")
     console.log(`built server-rendered app in ${totalDuration}ms`)
   } else {
+    console.log(`${colors.success(symbols.success())} ${colors.bold("validated production configuration")}`)
+    console.log(`${colors.success(symbols.success())} ${colors.bold("wrote build manifest")}`)
     console.log(`${colors.success(symbols.success())} ${colors.bold("built server-rendered app")} in ${colors.bold(`${totalDuration}ms`)}`)
   }
 }

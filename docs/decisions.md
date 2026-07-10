@@ -51,3 +51,32 @@ This document outlines design and rebranding decisions made during version `v0.2
 ### 3. Notes Actions Use Current Boronix Form API
 - The requested CRUD action snippets used `request.formData()`, but Boronix action context currently exposes the `form` helper.
 - Generated notes actions use `form.string()` and `form.number()` plus `fail(data, { status })` so templates compile against the current public API.
+
+## v0.5.0 Decisions
+
+### 1. Environment Mode Standardization
+- Normalized mode to `"development"` and `"production"`.
+- Mode resolution order: CLI command -> `BORONIX_ENV` -> `NODE_ENV`.
+- Avoided ad-hoc reading of environment variables by centralizing it in `core/mode.ts`.
+
+### 2. Session Usage Detection
+- Recursively scans the `app/` folder for `session` or `auth` keywords to determine if session features are used, preventing the need to enforce session secrets on purely static/basic apps.
+
+### 3. Atomic Build Output Writes
+- Implemented build compilation to `.boronix.tmp`. On success, `.boronix` is rotated to `.boronix.bak` and renamed to `.boronix`. If an error occurs, `.boronix.tmp` is deleted and `KQ_BUILD_OUTPUT_WRITE_FAILED` is thrown.
+
+### 4. Production Error Safety
+- 5xx errors in production default to "Internal Server Error" message rendering, with all stack traces, configuration settings, credentials, and filesystem paths stripped out.
+- For API endpoints, JSON error envelopes alongside a unique Request ID are returned to enable debugging without information leakage.
+
+### 5. Dependency Audit (v0.5.0)
+- `bun audit` reports 1 moderate vulnerability: `esbuild <=0.24.2` (GHSA-67mh-4wv8-2f99).
+- This vulnerability is in the `drizzle-kit` devDependency chain, not in production runtime code.
+- `esbuild`'s development server can be accessed cross-origin, but this only affects local development.
+- Production runtime (`boronix` package) has zero dependencies and is not affected.
+- Not updating `drizzle-kit` to avoid breaking changes without thorough testing. Will revisit when upstream fix is released.
+
+### 6. Legacy Manifest Handling
+- Chose option B for legacy `.boronix` manifests from v0.4.x: report `KQ_BUILD_VERSION_UNSUPPORTED` and require running `boronix build` again.
+- This is simpler and clearer than attempting migration/normalization of old manifests.
+

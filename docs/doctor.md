@@ -1,30 +1,32 @@
 # Boronix Doctor
 
-The `doctor` command inspects your project layout, route configuration, and runtime environment to diagnose common errors.
+Verify your project health and production readiness using the doctor utility.
 
-## Usage
+## Command Usage
 
 ```bash
-boronix doctor [options]
+# General health checks
+boronix doctor
+
+# Production environment checks
+boronix doctor --production
+
+# Machine-readable output mode
+boronix doctor --production --json
 ```
 
-## Checks Performed
+## Production Verification Checks
 
-### 1. Project Checks
-- **package.json**: Ensures a node configuration file is present.
-- **boronix.config.ts**: Verifies the core configuration is present.
-- **app/routes**: Checks that the routes capsule folder exists.
-- **public/**: Warns if the static assets folder is missing.
+When running in `--production` mode, the doctor validates:
+- **Build Manifest**: Checks that `.boronix/manifest.json` exists and is version 1.
+- **Build Runtime**: Checks if the target runtime (Bun/Node) matches start runtime.
+- **Output Files**: Confirms the build output folder exists.
+- **Host and Port**: Checks server port is integer (1-65535) and host is non-empty.
+- **Session Configuration**: Verifies session.secret is customized if sessions are in use.
+- **Public Directory**: Ensures public dir doesn't escape project root.
+- **Database (Optional)**: If Drizzle is used, runs schema, client, and config checks.
 
-### 2. Routes Checks
-- **no duplicate routes**: Detects duplicate definitions of page or API route capsules that clash on the same path.
-- **route capsules valid**: Scans `page.ts` files to ensure they export a default router block (`export default page(...)`), and checks actions files to prevent invalid default exports.
+## Exit Codes
 
-### 3. Runtime Checks
-- **bun / node availability**: Checks if the target runtimes are installed on the system.
-- **runtime config**: Validates the selected runtime option in `boronix.config.ts`.
-- **session secret**: In `production` environment, alerts you if `session.secret` is using the insecure development default.
-
-## Output
-
-Returns exit code `0` if all critical checks pass, and `1` if there are any issues found. Warnings do not cause a non-zero exit code.
+- `0` - Project is healthy / production-ready.
+- `1` - Blocker issues found.

@@ -69,6 +69,12 @@ export function formatCommandHelp(command: string): string {
     options = `  --root <dir>        Project root
   --plain             Disable colors, unicode, and spinner
   --no-color          Disable colors`
+  } else if (command === "doctor") {
+    options = `  --root <dir>        Project root
+  --production        Run checks for production environment validation
+  --json              Output diagnostics in machine-readable JSON format
+  --plain             Disable colors, unicode, and spinner
+  --no-color          Disable colors`
   } else {
     options = `  --root <dir>        Project root
   --plain             Disable colors, unicode, and spinner

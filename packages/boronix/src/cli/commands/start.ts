@@ -1,11 +1,14 @@
 import { existsSync, readFileSync } from "node:fs"
+import { pathToFileURL } from "node:url"
 import path from "node:path"
 import { loadConfig } from "../../config/load-config"
 import type { ResolvedBoronixConfig } from "../../config/types"
 import { createBoronixApp } from "../../core/app"
 import { BoronixUserError } from "../../core/errors"
 import { selectRuntime } from "../../runtime/select"
-import type { BuildManifest } from "../../build/manifest"
+import { readBuildManifest, validateBuildManifest } from "../../build/manifest"
+import { validateProductionConfig } from "../../config/validation"
+import { setBoronixMode } from "../../core/mode"
 import { initUiSettings, areColorsEnabled } from "../ui/terminal"
 import { colors } from "../ui/colors"
 import { symbols } from "../ui/symbols"
@@ -22,55 +25,121 @@ export async function startCommand(
     verbose?: boolean | undefined
   } = {}
 ): Promise<void> {
+  // 1. Set production mode
+  setBoronixMode("production")
+
   initUiSettings({ plain: options.plain, noColor: options.noColor })
 
-  const manifestPath = path.join(root, ".boronix", "manifest.json")
+  const resolvedRoot = path.resolve(root)
 
-  if (!existsSync(manifestPath)) {
-    const legacyPath = path.join(root, ".kumquat", "manifest.json")
-    if (existsSync(legacyPath)) {
-      throw new BoronixUserError("Found old .kumquat build output.", {
-        code: "KQ_MANIFEST_DEPRECATED",
-        hint: "Run `boronix build` to generate .boronix."
-      })
-    }
-    throw new BoronixUserError("No production manifest found.", {
-      code: "KQ_MANIFEST_MISSING",
-      hint: "Run `boronix build` before `boronix start`."
+  // 2. Read and validate build manifest
+  const manifest = readBuildManifest(resolvedRoot)
+
+  const runtimeName = options.runtime ?? manifest.runtime ?? "bun"
+
+  if (runtimeName === "deno") {
+    throw new BoronixUserError("Deno runtime is not implemented yet.", {
+      code: "KQ_RUNTIME_UNSUPPORTED",
+      hint: "Use `--runtime bun` or `--runtime node`."
     })
   }
 
-  const config = await loadConfig(root)
+  // validateBuildManifest throws KQ_BUILD_RUNTIME_MISMATCH if runtime does not match
+  validateBuildManifest(manifest, runtimeName as "bun" | "node")
+
+  // 3. Resolve port and host priority: CLI flags -> config -> environment variables -> defaults
+  const config = await loadConfig(resolvedRoot)
+
+  let configHost: string | undefined
+  let configPort: number | undefined
+  const configPath = path.join(resolvedRoot, "boronix.config.ts")
+  if (existsSync(configPath)) {
+    try {
+      const module = await import(`${pathToFileURL(configPath).href}?t=${Date.now()}`)
+      configHost = module.default?.server?.host
+      configPort = module.default?.server?.port
+    } catch {}
+  }
+
+  const resolvedHost = options.host ?? configHost ?? process.env.BORONIX_HOST ?? process.env.HOST ?? "0.0.0.0"
+  const envPort = process.env.BORONIX_PORT ?? process.env.PORT
+  const resolvedPort = options.port ?? configPort ?? (envPort ? parseInt(envPort, 10) : undefined) ?? 3000
+
+  config.server.host = resolvedHost
+  config.server.port = resolvedPort
+
+  // 4. Validate production environment config (port, host, session secret, paths)
+  validateProductionConfig(resolvedRoot, config, runtimeName)
+
   initUiSettings({ plain: options.plain, noColor: options.noColor }, config.cli)
 
-  const runtimeName = options.runtime ?? config.runtime
-  const port = options.port ?? config.server.port
-  const host = options.host ?? config.server.host
-
-  const runtime = selectRuntime(runtimeName)
-  const buildManifest = JSON.parse(readFileSync(manifestPath, "utf8")) as BuildManifest
+  // 5. Create production app
   const app = createBoronixApp({
-    root,
+    root: resolvedRoot,
     config,
-    manifest: buildManifest.routes,
+    manifest: manifest.routes,
     quiet: options.quiet,
     verbose: options.verbose,
     plain: options.plain
   })
 
+  const runtime = selectRuntime(runtimeName)
+  let server: any
   try {
-    runtime.serve({
-      port,
-      host,
+    server = runtime.serve({
+      port: resolvedPort,
+      host: resolvedHost,
       fetch: app.fetch
     })
   } catch (err: any) {
     throw err
   }
 
+  // Graceful shutdown handling
+  let isShuttingDown = false
+  const shutdown = () => {
+    if (isShuttingDown) return
+    isShuttingDown = true
+
+    console.log("")
+    console.warn("⚠ shutdown requested")
+
+    try {
+      if (server && typeof server.stop === "function") {
+        // Bun
+        server.stop()
+      } else if (server && typeof server.close === "function") {
+        // Node HTTP
+        server.close()
+      }
+    } catch {}
+
+    const forceTimeout = setTimeout(() => {
+      console.log("✔ server stopped")
+      process.exit(0)
+    }, 5000)
+
+    if (server && typeof server.close === "function") {
+      server.close(() => {
+        clearTimeout(forceTimeout)
+        console.log("✔ server stopped")
+        process.exit(0)
+      })
+    } else {
+      setTimeout(() => {
+        clearTimeout(forceTimeout)
+        console.log("✔ server stopped")
+        process.exit(0)
+      }, 100)
+    }
+  }
+
+  process.on("SIGINT", shutdown)
+  process.on("SIGTERM", shutdown)
+
   const isPlain = !areColorsEnabled()
-  const localHost = host === "0.0.0.0" ? "localhost" : host
-  const localUrl = `http://${localHost}:${port}`
+  const localHost = resolvedHost === "0.0.0.0" ? "localhost" : resolvedHost
+  const localUrl = `http://${localHost}:${resolvedPort}`
 
   if (isPlain) {
     console.log(`* Boronix`)

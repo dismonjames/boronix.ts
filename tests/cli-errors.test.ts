@@ -33,8 +33,8 @@ test("missing production manifest gives useful start error", () => {
 
     expect(result.exitCode).toBe(1)
     const stderr = new TextDecoder().decode(result.stderr)
-    expect(stderr).toContain("KQ_MANIFEST_MISSING")
-    expect(stderr).toContain("No production manifest found.")
+    expect(stderr).toContain("KQ_BUILD_OUTPUT_NOT_FOUND")
+    expect(stderr).toContain("Could not find .boronix/manifest.json")
   } finally {
     rmSync(tempDir, { recursive: true, force: true })
   }

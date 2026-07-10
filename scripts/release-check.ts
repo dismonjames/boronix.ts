@@ -57,8 +57,8 @@ for (const pkgName of packages) {
     process.exit(1)
   }
 
-  if (pkg.version !== "0.4.3") {
-    console.error(`✖ version mismatch for ${pkgName}: expected 0.4.3, found ${pkg.version}`)
+  if (pkg.version !== "0.5.0") {
+    console.error(`✖ version mismatch for ${pkgName}: expected 0.5.0, found ${pkg.version}`)
     process.exit(1)
   }
 
@@ -106,5 +106,72 @@ for (const pkgName of packages) {
 
 console.log("✔ package metadata valid")
 console.log("✔ dist files found")
+
+// 5. Verify create templates use ^0.5.0
+const templatePkgPaths = [
+  path.join(rootDir, "packages/create-boronix/src/templates/basic/package.json"),
+  path.join(rootDir, "packages/create-boronix/src/templates/homework/package.json")
+]
+for (const tplPath of templatePkgPaths) {
+  const tplPkg = JSON.parse(readFileSync(tplPath, "utf8"))
+  if (tplPkg.dependencies?.boronix !== "^0.5.0") {
+    console.error(`✖ Template ${tplPath} does not use ^0.5.0 for boronix`)
+    process.exit(1)
+  }
+  if (!tplPkg.scripts?.["doctor:production"] || tplPkg.scripts["doctor:production"] !== "boronix doctor --production") {
+    console.error(`✖ Template ${tplPath} missing doctor:production script`)
+    process.exit(1)
+  }
+}
+console.log("✔ create templates use ^0.5.0")
+
+// 6. Verify production docs exist
+const requiredDocs = [
+  "docs/production.md",
+  "docs/deployment.md",
+  "docs/health-check.md",
+  "docs/security.md",
+  "docs/static-files.md",
+  "docs/configuration.md",
+  "docs/session.md",
+  "docs/doctor.md",
+  "docs/releases/v0.5.0-production-hardening.md",
+  "docs/releases/github-v0.5.0.md"
+]
+for (const doc of requiredDocs) {
+  if (!existsSync(path.join(rootDir, doc))) {
+    console.error(`✖ Production doc missing: ${doc}`)
+    process.exit(1)
+  }
+}
+console.log("✔ production docs exist")
+
+// 7. Verify manifest validator is exported
+const indexSrc = readFileSync(path.join(rootDir, "packages/boronix/src/index.ts"), "utf8")
+if (!indexSrc.includes("readBuildManifest") || !indexSrc.includes("validateBuildManifest")) {
+  console.error("✖ Manifest validators not exported from index.ts")
+  process.exit(1)
+}
+console.log("✔ manifest validators exported")
+
+// 8. Check no hard-coded development secret in production path
+const appSrc = readFileSync(path.join(rootDir, "packages/boronix/src/core/app.ts"), "utf8")
+if (appSrc.includes("boronix-dev-session-secret") && !appSrc.includes("isSecretDefault")) {
+  console.error("✖ Hard-coded development secret found in production path without guard")
+  process.exit(1)
+}
+console.log("✔ no hard-coded development secret in production path")
+
+// 9. Verify tarball has dist/README/LICENSE (check files field in package.json)
+for (const pkgName of packages) {
+  const pkgPath = path.join(rootDir, "packages", pkgName, "package.json")
+  const pkg = JSON.parse(readFileSync(pkgPath, "utf8"))
+  if (!pkg.files || !pkg.files.includes("dist") || !pkg.files.includes("README.md") || !pkg.files.includes("LICENSE")) {
+    console.error(`✖ ${pkgName} package.json files field missing dist/README/LICENSE`)
+    process.exit(1)
+  }
+}
+console.log("✔ package tarball includes dist/README/LICENSE")
+
 console.log("✔ all release checks passed successfully")
 process.exit(0)

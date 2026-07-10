@@ -40,7 +40,9 @@ test("handleNotFoundResponse returns 404 response", () => {
       server: { port: 3000, host: "0.0.0.0" },
       app: { root: "app", routesDir: "app/routes", publicDir: "public" },
       session: { name: "kq_session", secret: "123", maxAge: 3600, sameSite: "lax", secure: false },
-      cli: { color: true, unicode: true, requestLog: true, groupRoutes: true }
+      cli: { color: true, unicode: true, requestLog: true, groupRoutes: true },
+      health: { enabled: false, path: "/health" },
+      security: { headers: true }
     }
   })
 

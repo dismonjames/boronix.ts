@@ -22,6 +22,17 @@ export type BoronixConfig = {
     requestLog?: boolean
     groupRoutes?: boolean
   }
+  health?: {
+    enabled?: boolean
+    path?: string
+  }
+  security?: {
+    headers?: boolean | {
+      contentTypeOptions?: string
+      referrerPolicy?: string
+      frameOptions?: string
+    }
+  }
 }
 
 export type ResolvedBoronixConfig = {
@@ -48,6 +59,17 @@ export type ResolvedBoronixConfig = {
     requestLog: boolean
     groupRoutes: boolean
   }
+  health: {
+    enabled: boolean
+    path: string
+  }
+  security: {
+    headers: boolean | {
+      contentTypeOptions?: string
+      referrerPolicy?: string
+      frameOptions?: string
+    }
+  }
 }
 
 export const defaultConfig: ResolvedBoronixConfig = {
@@ -73,5 +95,12 @@ export const defaultConfig: ResolvedBoronixConfig = {
     unicode: true,
     requestLog: true,
     groupRoutes: true
+  },
+  health: {
+    enabled: false,
+    path: "/health"
+  },
+  security: {
+    headers: true
   }
 }

@@ -112,7 +112,9 @@ async function main(argv: string[]): Promise<void> {
   if (parsed.command === "doctor") {
     await doctorCommand(parsed.root, {
       plain: parsed.plain,
-      noColor: parsed.noColor
+      noColor: parsed.noColor,
+      production: parsed.production,
+      json: parsed.json
     })
     return
   }

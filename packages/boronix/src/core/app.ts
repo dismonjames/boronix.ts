@@ -16,6 +16,7 @@ import { servePublic } from "../static/serve-public"
 import { resolvePath } from "../utils/path"
 import type { ResolvedBoronixConfig } from "../config/types"
 import { renderTemplate } from "../render/template"
+import { detectSessionUsage } from "../utils/session-usage"
 
 import { logRequest, isStaticAsset } from "../cli/ui/activity"
 
@@ -30,9 +31,30 @@ export type BoronixAppOptions = {
 }
 
 export function createBoronixApp(options: BoronixAppOptions): { fetch(req: Request): Promise<Response> } {
+  // If in production, and session is used, check secret
+  const isProd = !options.dev
+  if (isProd) {
+    const hasSession = detectSessionUsage(options.root)
+    const isSecretDefault = !options.config.session.secret || options.config.session.secret === "boronix-dev-session-secret"
+    if (hasSession && isSecretDefault) {
+      throw new BoronixUserError(
+        "A session secret is required in production.\nSet session.secret in boronix.config.ts or provide BORONIX_SESSION_SECRET.",
+        {
+          code: "KQ_SESSION_SECRET_MISSING",
+          hint: "Set session.secret in boronix.config.ts or provide BORONIX_SESSION_SECRET."
+        }
+      )
+    }
+  }
+
   return {
     async fetch(req: Request): Promise<Response> {
       const url = new URL(req.url)
+      const requestId = "req_" + (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : Math.random().toString(36).substring(2) + Date.now().toString(36)
+      ).replace(/-/g, "").substring(0, 16)
+
       const session = createSession(req, options.config.session)
       const auth = createAuth(session)
       const flash = createFlash(session)
@@ -41,7 +63,23 @@ export function createBoronixApp(options: BoronixAppOptions): { fetch(req: Reque
       try {
         manifest = options.dev ? scanRoutes(resolvePath(options.root, options.config.app.routesDir)) : options.manifest ?? []
       } catch (err: any) {
-        return handleDevOrErrorPageResponse(err, "config", req, url, [], options)
+        const errRes = handleDevOrErrorPageResponse(err, "config", req, url, [], options, undefined, requestId)
+        const finalResponse = commitSession(errRes, session)
+        return applyResponseHeaders(finalResponse, requestId, !!options.dev, options.config)
+      }
+
+      // Serve Health Check
+      if (options.config.health?.enabled && url.pathname === options.config.health.path && req.method === "GET") {
+        const matched = matchRoute(manifest, url.pathname, "page") || matchRoute(manifest, url.pathname, "api")
+        if (!matched) {
+          const res = json({
+            status: "ok",
+            framework: "boronix",
+            version: "0.5.0"
+          })
+          const finalResponse = commitSession(res, session)
+          return applyResponseHeaders(finalResponse, requestId, !!options.dev, options.config)
+        }
       }
 
       const startTime = performance.now()
@@ -51,7 +89,7 @@ export function createBoronixApp(options: BoronixAppOptions): { fetch(req: Reque
       let response: Response | null = null
 
       try {
-        const publicResponse = await servePublic(resolvePath(options.root, options.config.app.publicDir), url)
+        const publicResponse = await servePublic(resolvePath(options.root, options.config.app.publicDir), url, req)
         if (publicResponse) {
           response = publicResponse
           kind = "serve"
@@ -63,7 +101,7 @@ export function createBoronixApp(options: BoronixAppOptions): { fetch(req: Reque
               kind = "miss"
               response = handleNotFoundResponse(req, url, manifest, options)
             } else {
-              response = await handleApi(req, url, manifest, session, auth, flash)
+              response = await handleApi(req, url, manifest, session, auth, flash, requestId)
             }
           } else {
             const matched = matchRoute(manifest, url.pathname, "page")
@@ -76,7 +114,7 @@ export function createBoronixApp(options: BoronixAppOptions): { fetch(req: Reque
               } else {
                 kind = matched.item.pageModule ? "render" : "serve"
               }
-              response = await handlePage(req, url, manifest, options, session, auth, flash)
+              response = await handlePage(req, url, manifest, options, session, auth, flash, requestId)
             }
           }
         }
@@ -93,7 +131,7 @@ export function createBoronixApp(options: BoronixAppOptions): { fetch(req: Reque
         }
 
         const finalResponse = commitSession(response, session)
-        return finalResponse
+        return applyResponseHeaders(finalResponse, requestId, !!options.dev, options.config)
       } catch (err: any) {
         status = err.status || 500
         if (err instanceof Response) {
@@ -104,13 +142,14 @@ export function createBoronixApp(options: BoronixAppOptions): { fetch(req: Reque
           kind = "error"
         }
         
-        extra = err.code || err.message || ""
+        extra = !options.dev && status >= 500 ? "error" : (err.code || err.message || "")
 
         const matched = matchRoute(manifest, url.pathname, "page") || matchRoute(manifest, url.pathname, "api")
         const phase = determineErrorPhase(err, kind)
         
-        const errorResponse = handleDevOrErrorPageResponse(err, phase, req, url, manifest, options, matched?.item)
-        return commitSession(errorResponse, session)
+        const errorResponse = handleDevOrErrorPageResponse(err, phase, req, url, manifest, options, matched?.item, requestId)
+        const finalResponse = commitSession(errorResponse, session)
+        return applyResponseHeaders(finalResponse, requestId, !!options.dev, options.config)
       } finally {
         const duration = Math.round(performance.now() - startTime)
         const configLog = options.config.cli.requestLog
@@ -126,7 +165,11 @@ export function createBoronixApp(options: BoronixAppOptions): { fetch(req: Reque
           } else if (isQuiet && status < 500) {
             // skip normal logs in quiet mode
           } else {
-            logRequest(req.method, url.pathname + url.search, status, kind, duration, extra, options.dev)
+            let logExtra = extra
+            if (!options.dev && requestId) {
+              logExtra = (logExtra ? `${logExtra} ` : "") + requestId
+            }
+            logRequest(req.method, url.pathname + url.search, status, kind, duration, logExtra, options.dev)
           }
         }
       }
@@ -142,7 +185,7 @@ function determineErrorPhase(err: any, kind: string): BoronixErrorPhase {
   return "unknown"
 }
 
-async function handleApi(req: Request, url: URL, manifest: RouteManifest, session: Session, auth: Auth, flash: Flash): Promise<Response> {
+async function handleApi(req: Request, url: URL, manifest: RouteManifest, session: Session, auth: Auth, flash: Flash, requestId?: string): Promise<Response> {
   const match = matchRoute(manifest, url.pathname, "api")
   if (!match?.item.apiModule) {
     return notFound()
@@ -171,6 +214,7 @@ async function handleApi(req: Request, url: URL, manifest: RouteManifest, sessio
       session,
       auth,
       flash,
+      requestId,
       body: createBodyReader(req)
     })
     
@@ -197,7 +241,8 @@ async function handlePage(
   options: BoronixAppOptions,
   session: Session,
   auth: Auth,
-  flash: Flash
+  flash: Flash,
+  requestId?: string
 ): Promise<Response> {
   const match = matchRoute(manifest, url.pathname, "page")
   if (!match?.item.pageHtml) {
@@ -206,7 +251,7 @@ async function handlePage(
 
   try {
     if (req.method === "POST" && url.search.startsWith("?/")) {
-      const response = await handleAction(req, url, match, options, session, auth, flash)
+      const response = await handleAction(req, url, match, options, session, auth, flash, requestId)
       if (response instanceof Response && response.status === 404) {
         return handleNotFoundResponse(req, url, manifest, options, match.item.routeDir)
       }
@@ -217,7 +262,7 @@ async function handlePage(
       return new Response("Method Not Allowed", { status: 405 })
     }
 
-    const response = await renderPage(req, url, match, options, session, auth, flash)
+    const response = await renderPage(req, url, match, options, session, auth, flash, undefined, 200, requestId)
     if (response instanceof Response && response.status === 404) {
       return handleNotFoundResponse(req, url, manifest, options, match.item.routeDir)
     }
@@ -237,7 +282,8 @@ async function handleAction(
   options: BoronixAppOptions,
   session: Session,
   auth: Auth,
-  flash: Flash
+  flash: Flash,
+  requestId?: string
 ): Promise<Response> {
   if (req.method !== "POST") {
     throw new BoronixUserError(`Actions must be requested using POST method. Found: ${req.method}`, {
@@ -309,6 +355,7 @@ async function handleAction(
       session,
       auth,
       flash,
+      requestId,
       form: createActionForm(await readFormData(req))
     })
   } catch (err: any) {
@@ -333,7 +380,7 @@ async function handleAction(
   }
 
   if (isFailResult(result)) {
-    return renderPage(req, url, match, options, session, auth, flash, result.data, result.status)
+    return renderPage(req, url, match, options, session, auth, flash, result.data, result.status, requestId)
   }
 
   return result
@@ -348,7 +395,8 @@ async function renderPage(
   auth: Auth,
   flash: Flash,
   extraData: Record<string, unknown> = {},
-  status = 200
+  status = 200,
+  requestId?: string
 ): Promise<Response> {
   let data: Record<string, unknown> = {}
 
@@ -374,6 +422,7 @@ async function renderPage(
           session,
           auth,
           flash,
+          requestId,
           user: null
         })
       } catch (err: any) {
@@ -623,13 +672,15 @@ export function handleNotFoundResponse(
   return htmlResponse(html, { status: 404 })
 }
 
-function renderDefaultProductionErrorHtml(message: string, status: number): string {
+function renderDefaultProductionErrorHtml(message: string, status: number, requestId?: string): string {
+  const msg = status >= 500 ? "Internal Server Error" : message
+  const reqIdHtml = requestId ? `<p style="font-size: 0.85rem; color: #64748b; margin-top: 20px;">Request ID: ${escapeHtml(requestId)}</p>` : ""
   return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Error</title>
+  <title>Error ${status}</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -667,7 +718,8 @@ function renderDefaultProductionErrorHtml(message: string, status: number): stri
 <body>
   <div class="card">
     <h1>Something went wrong</h1>
-    <p>An internal server error occurred.</p>
+    <p>${escapeHtml(msg)}</p>
+    ${reqIdHtml}
   </div>
 </body>
 </html>
@@ -884,18 +936,56 @@ export function handleDevOrErrorPageResponse(
   url: URL,
   manifest: RouteManifest,
   options: BoronixAppOptions,
-  item?: RouteManifestItem
+  item?: RouteManifestItem,
+  requestId?: string
 ): Response {
   const root = options.root
   const diagnostic = diagnoseError(error, root, phase)
   diagnostic.route = url.pathname + url.search
   diagnostic.pattern = item?.routePath
   diagnostic.method = req.method
-  diagnostic.status = 500
+  
+  let status = 500
+  if (error && typeof error === "object" && "status" in (error as any)) {
+    status = (error as any).status
+  } else if (error instanceof Response) {
+    status = error.status
+  }
+  diagnostic.status = status
 
+  // If API request, return JSON
+  if (url.pathname.startsWith("/api/")) {
+    if (options.dev) {
+      return json({
+        error: {
+          message: diagnostic.message,
+          phase: diagnostic.phase,
+          code: (error as any)?.code,
+          file: diagnostic.file,
+          stack: diagnostic.stack,
+          codeFrame: diagnostic.codeFrame,
+          hints: diagnostic.hints,
+          requestId
+        }
+      }, { status })
+    } else {
+      const is4xx = status >= 400 && status < 500
+      const code = is4xx ? ((error as any)?.code || "BAD_REQUEST") : "INTERNAL_SERVER_ERROR"
+      const message = is4xx ? (diagnostic.message || "Bad Request") : "Internal Server Error"
+      return json({
+        error: {
+          code,
+          message,
+          requestId
+        }
+      }, { status: is4xx ? status : 500 })
+    }
+  }
+
+  // HTML page request
   if (options.dev) {
     const html = renderDiagnosticDevErrorPage(diagnostic)
-    return htmlResponse(html, { status: 500 })
+    return htmlResponse(html, { status })
   }
 
   const appRoot = resolvePath(options.root, options.config.app.root)
@@ -903,19 +993,51 @@ export function handleDevOrErrorPageResponse(
   const routeDir = item?.routeDir
 
   const closestErrorPage = findClosestErrorPage(appRoot, routesDir, routeDir)
+  const displayMessage = (!options.dev && status >= 500) ? "Internal Server Error" : diagnostic.message
+
   if (closestErrorPage) {
     try {
       const content = readFileSync(closestErrorPage, "utf8")
       const rendered = renderTemplate(content, {
-        message: diagnostic.message,
-        status: 500,
+        message: displayMessage,
+        status: status,
         route: diagnostic.route,
-        phase: diagnostic.phase
+        phase: diagnostic.phase,
+        requestId: requestId
       })
-      return htmlResponse(rendered, { status: 500 })
+      return htmlResponse(rendered, { status })
     } catch {}
   }
 
-  const html = renderDefaultProductionErrorHtml(diagnostic.message, 500)
-  return htmlResponse(html, { status: 500 })
+  const html = renderDefaultProductionErrorHtml(displayMessage, status, requestId)
+  return htmlResponse(html, { status })
 }
+
+function applyResponseHeaders(
+  response: Response,
+  requestId: string,
+  dev: boolean,
+  config: ResolvedBoronixConfig
+): Response {
+  const headers = new Headers(response.headers)
+  headers.set("x-boronix-request-id", requestId)
+
+  if (!dev && config.security?.headers) {
+    const sh = config.security.headers
+    const cto = typeof sh === "object" ? sh.contentTypeOptions : "nosniff"
+    const rp = typeof sh === "object" ? sh.referrerPolicy : "strict-origin-when-cross-origin"
+    const fo = typeof sh === "object" ? sh.frameOptions : "SAMEORIGIN"
+
+    if (cto) headers.set("X-Content-Type-Options", cto)
+    if (rp) headers.set("Referrer-Policy", rp)
+    if (fo) headers.set("X-Frame-Options", fo)
+  }
+
+  const hasNoBody = [101, 204, 205, 304].includes(response.status)
+  return new Response(hasNoBody ? null : response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  })
+}
+

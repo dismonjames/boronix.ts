@@ -47,7 +47,9 @@ test("handleDevOrErrorPageResponse returns 500 response without leak in prod", (
         server: { port: 3000, host: "0.0.0.0" },
         app: { root: "app", routesDir: "app/routes", publicDir: "public" },
         session: { name: "kq_session", secret: "123", maxAge: 3600, sameSite: "lax", secure: false },
-        cli: { color: true, unicode: true, requestLog: true, groupRoutes: true }
+        cli: { color: true, unicode: true, requestLog: true, groupRoutes: true },
+        health: { enabled: false, path: "/health" },
+        security: { headers: true }
       }
     }
   )
@@ -78,7 +80,9 @@ test("handleDevOrErrorPageResponse uses polished dev overlay in dev mode", async
         server: { port: 3000, host: "0.0.0.0" },
         app: { root: "app", routesDir: "app/routes", publicDir: "public" },
         session: { name: "kq_session", secret: "123", maxAge: 3600, sameSite: "lax", secure: false },
-        cli: { color: true, unicode: true, requestLog: true, groupRoutes: true }
+        cli: { color: true, unicode: true, requestLog: true, groupRoutes: true },
+        health: { enabled: false, path: "/health" },
+        security: { headers: true }
       }
     }
   )
