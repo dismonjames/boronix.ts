@@ -3,7 +3,7 @@ export type SupervisorToChildMessage =
   | { type: "broadcast-reload"; revision: number; reason: string; path?: string }
 
 export type ChildToSupervisorMessage =
-  | { type: "ready"; pid: number; port: number; host: string; revision: number }
+  | { type: "ready"; pid: number; port: number; host: string; revision: number; runtime: string; hasBunGlobal: boolean; processReleaseName?: string | undefined }
   | { type: "error"; pid: number; revision: number; code?: string; message: string }
   | { type: "stopped"; pid: number; revision: number }
 

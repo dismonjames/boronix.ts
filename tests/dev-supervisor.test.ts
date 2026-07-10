@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { mkdirSync, rmSync, writeFileSync } from "node:fs"
+import { mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import os from "node:os"
 
@@ -10,8 +10,11 @@ function fixture(): string {
   const root = path.join(os.tmpdir(), `boronix-supervisor-${Date.now()}-${Math.random().toString(36).slice(2)}`)
   mkdirSync(path.join(root, "app", "routes", "home"), { recursive: true })
   mkdirSync(path.join(root, "public"), { recursive: true })
-  writeFileSync(path.join(root, "app", "routes", "home", "page.html"), "<main>{{ message }} {{ pid }}</main>")
-  writeFileSync(path.join(root, "app", "routes", "home", "page.ts"), 'export default () => ({ message: "version-one", pid: process.pid })\n')
+  writeFileSync(path.join(root, "package.json"), JSON.stringify({ type: "module", devDependencies: { tsx: "^4" } }))
+  mkdirSync(path.join(root, "node_modules"), { recursive: true })
+  symlinkSync(path.join(repo, "node_modules", "tsx"), path.join(root, "node_modules", "tsx"), "dir")
+  writeFileSync(path.join(root, "app", "routes", "home", "page.html"), "<main>{{ message }} {{ pid }} {{ runtime }} {{ bun }}</main>")
+  writeFileSync(path.join(root, "app", "routes", "home", "page.ts"), 'export default () => ({ message: "version-one", pid: process.pid, runtime: process.release?.name ?? "unknown", bun: String(typeof Bun !== "undefined") })\n')
   writeFileSync(path.join(root, "public", "style.css"), "body { color: red; }\n")
   return root
 }
@@ -47,8 +50,11 @@ for (const runtime of ["bun", "node"] as const) {
       const first = await waitFor(port, value => value.status === 200 && value.body.includes("version-one"))
       const firstPid = first.body.match(/version-one\s+(\d+)/)?.[1]
       expect(firstPid).toBeDefined()
+      if (runtime === "node") {
+        expect(first.body).toContain("node false")
+      }
 
-      writeFileSync(path.join(root, "app", "routes", "home", "page.ts"), 'export default () => ({ message: "version-two", pid: process.pid })\n')
+      writeFileSync(path.join(root, "app", "routes", "home", "page.ts"), 'export default () => ({ message: "version-two", pid: process.pid, runtime: process.release?.name ?? "unknown", bun: String(typeof Bun !== "undefined") })\n')
       const second = await waitFor(port, value => value.status === 200 && value.body.includes("version-two"))
       const secondPid = second.body.match(/version-two\s+(\d+)/)?.[1]
       expect(secondPid).toBeDefined()

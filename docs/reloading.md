@@ -131,4 +131,4 @@ When `app/db/schema.ts` changes, Boronix reloads the app but does not automatica
 
 ## Bun and Node
 
-Both HTTP runtimes support the same user-facing reload flow. The worker is executed by Bun so application TypeScript can be loaded without a Node ESM loader; `--runtime node` selects the Node HTTP adapter.
+Both runtimes support the same user-facing reload flow. Bun uses a Bun worker; Node uses a real Node worker preloaded with the generated project's local `tsx` dependency (`node --import=tsx`).

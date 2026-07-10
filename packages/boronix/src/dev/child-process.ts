@@ -1,6 +1,9 @@
-import { spawn, type ChildProcess } from "node:child_process"
+import { spawn, spawnSync } from "node:child_process"
+import { createRequire } from "node:module"
+import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { decodeDevMessage, type ChildToSupervisorMessage, type SupervisorToChildMessage } from "./protocol"
+import { BoronixUserError } from "../core/errors"
 
 export type DevChildOptions = {
   root: string
@@ -30,12 +33,38 @@ function workerEntry(): string {
   return import.meta.url.endsWith(".ts") ? source : built
 }
 
+function resolveNodeExecutable(): string {
+  const executable = process.env.BORONIX_NODE_EXECUTABLE || "node"
+  const probe = spawnSync(executable, ["--version"], { stdio: "ignore" })
+  if (probe.error || probe.status !== 0) {
+    throw new BoronixUserError("Node.js is required for runtime \"node\".", {
+      code: "KQ_NODE_RUNTIME_NOT_FOUND",
+      hint: "Install Node.js or use --runtime bun."
+    })
+  }
+  return executable
+}
+
+function assertProjectTsx(root: string): void {
+  try {
+    const projectRequire = createRequire(path.join(root, "package.json"))
+    projectRequire.resolve("tsx/package.json")
+  } catch {
+    throw new BoronixUserError("The Node development runtime requires \"tsx\" to execute TypeScript.", {
+      code: "KQ_NODE_TS_RUNTIME_MISSING",
+      hint: "Install it with:\n\nnpm install --save-dev tsx"
+    })
+  }
+}
+
 export function spawnDevChild(options: DevChildOptions): DevChild {
-  // Bun remains the worker executable for both HTTP adapters because Node 20
-  // cannot import application .ts modules without a loader. `runtime` still
-  // selects the HTTP listener inside worker.ts.
-  const command = process.execPath
-  const args = [workerEntry(), "--root", options.root, "--runtime", options.runtime, "--revision", String(options.revision)]
+  const isNode = options.runtime === "node"
+  if (isNode) assertProjectTsx(options.root)
+  const command = isNode ? resolveNodeExecutable() : process.execPath
+  const args = [
+    ...(isNode ? ["--import=tsx"] : []),
+    workerEntry(), "--root", options.root, "--runtime", options.runtime, "--revision", String(options.revision)
+  ]
   if (options.port !== undefined) args.push("--port", String(options.port))
   if (options.host !== undefined) args.push("--host", options.host)
   if (options.quiet) args.push("--quiet")

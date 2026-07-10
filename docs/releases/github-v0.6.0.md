@@ -60,6 +60,7 @@ A lightweight dev client script is injected into HTML responses during `boronix 
 ## Bun and Node Support
 
 Both runtimes support the full dev reload flow: file watcher, route reload, browser SSE, template reload, and module reload.
+Node uses a real Node worker with the app-local `tsx` preload for TypeScript execution.
 
 ## Known Limitations
 

@@ -329,6 +329,60 @@ try {
     } catch {}
   }
 
+  // Node dev worker smoke: `tsx` comes from the generated application's own
+  // devDependencies and the child must report Node rather than a Bun global.
+  console.log("Testing Node dev worker from local tarball...")
+  execSync(`bun ${rootDir}/packages/create-boronix/dist/index.js node-app --template basic --runtime node --db none --no-install --no-git`, {
+    cwd: tempDir,
+    stdio: "inherit"
+  })
+  const nodeAppPath = path.join(tempDir, "node-app")
+  const nodeAppPkg = JSON.parse(readFileSync(path.join(nodeAppPath, "package.json"), "utf8"))
+  if (nodeAppPkg.devDependencies?.tsx !== "^4") {
+    console.error("✖ Node scaffold is missing project-local tsx")
+    process.exit(1)
+  }
+  delete nodeAppPkg.dependencies.boronix
+  writeFileSync(path.join(nodeAppPath, "package.json"), JSON.stringify(nodeAppPkg, null, 2), "utf8")
+  execSync(`bun add ${boronixTar}`, { cwd: nodeAppPath, stdio: "inherit" })
+  const nodePort = 3997
+  const nodeDevProc = Bun.spawn({
+    cmd: ["bunx", "boronix", "dev", "--runtime", "node", "--port", String(nodePort), "--host", "127.0.0.1", "--plain"],
+    cwd: nodeAppPath,
+    stdout: "pipe",
+    stderr: "pipe"
+  })
+  try {
+    const nodeHomeModule = path.join(nodeAppPath, "app", "routes", "home", "page.ts")
+    writeFileSync(nodeHomeModule, 'import { page } from "boronix"\n\nexport default page(() => ({ title: `${process.release.name}:${typeof Bun}` }))\n', "utf8")
+    let nodeReady = false
+    for (let attempt = 0; attempt < 100; attempt++) {
+      const html = await fetch(`http://127.0.0.1:${nodePort}/`).then(r => r.text()).catch(() => "")
+      if (html.includes("node:undefined")) { nodeReady = true; break }
+      await new Promise(resolve => setTimeout(resolve, 50))
+    }
+    if (!nodeReady) {
+      console.error("✖ Node worker did not report process.release.name=node and no Bun global")
+      process.exit(1)
+    }
+    writeFileSync(nodeHomeModule, 'import { page } from "boronix"\n\nexport default page(() => ({ title: "node-worker-reloaded" }))\n', "utf8")
+    let nodeReloaded = false
+    for (let attempt = 0; attempt < 100; attempt++) {
+      const html = await fetch(`http://127.0.0.1:${nodePort}/`).then(r => r.text()).catch(() => "")
+      if (html.includes("node-worker-reloaded")) { nodeReloaded = true; break }
+      await new Promise(resolve => setTimeout(resolve, 50))
+    }
+    if (!nodeReloaded) {
+      console.error("✖ Node worker did not reload updated page.ts")
+      process.exit(1)
+    }
+    console.log("✔ Node worker tarball reload verified")
+  } finally {
+    try { process.kill(nodeDevProc.pid, "SIGTERM") } catch {}
+    await new Promise(resolve => setTimeout(resolve, 500))
+    try { process.kill(nodeDevProc.pid, "SIGKILL") } catch {}
+  }
+
   console.log("Testing create-boronix rejects SQLite on Node runtime...")
   try {
     execSync(`bun ${rootDir}/packages/create-boronix/dist/index.js sqlite-node-app --template basic --runtime node --db sqlite --no-install --no-git`, {

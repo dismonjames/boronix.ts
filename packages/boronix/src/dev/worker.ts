@@ -107,7 +107,16 @@ async function main(): Promise<void> {
       : createBoronixApp({ root: options.root, config, manifest, dev: true, quiet: options.quiet, verbose: options.verbose, plain: options.plain })
 
     server = selectRuntime(config.runtime).serve({ port: config.server.port, host: config.server.host, fetch: app.fetch })
-    report({ type: "ready", pid: process.pid, port: config.server.port, host: config.server.host, revision: options.revision })
+    report({
+      type: "ready",
+      pid: process.pid,
+      port: config.server.port,
+      host: config.server.host,
+      revision: options.revision,
+      runtime: config.runtime,
+      hasBunGlobal: typeof Bun !== "undefined",
+      ...(process.release?.name ? { processReleaseName: process.release.name } : {})
+    })
   } catch (error: any) {
     report({
       type: "error", pid: process.pid, revision: options.revision,

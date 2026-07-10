@@ -188,6 +188,12 @@ async function run() {
         "drizzle-kit": "latest"
       }
     }
+    if (runtime === "node") {
+      pkg.devDependencies = {
+        ...(pkg.devDependencies ?? {}),
+        "tsx": "^4"
+      }
+    }
 
     writeFileSync(pkgPath, JSON.stringify(pkg, null, 2), "utf8")
   }
