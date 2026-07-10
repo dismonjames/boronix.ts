@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "frameworkVersion": "0.7.0",
+  "createdAt": "2026-07-10T15:04:43.521Z",
+  "runtime": "bun",
+  "mode": "production",
+  "output": {
+    "directory": ".boronix",
+    "serverEntry": ".boronix/server/entry.js",
+    "templatesDirectory": ".boronix/templates",
+    "publicDirectory": ".boronix/public"
+  },
+  "routes": [
+    {
+      "kind": "page",
+      "routeId": "/",
+      "routePath": "/",
+      "params": [],
+      "routeDir": "app/routes",
+      "pageHtml": "app/routes/page.html",
+      "pageModule": "app/routes/page.ts"
+    },
+    {
+      "kind": "page",
+      "routeId": "/exercises",
+      "routePath": "/exercises",
+      "params": [],
+      "routeDir": "app/routes/exercises",
+      "pageHtml": "app/routes/exercises/page.html",
+      "pageModule": "app/routes/exercises/page.ts"
+    },
+    {
+      "kind": "api",
+      "routeId": "/exercises",
+      "routePath": "/exercises",
+      "apiPath": "/api/exercises",
+      "params": [],
+      "routeDir": "app/routes/exercises",
+      "apiModule": "app/routes/exercises/api.ts"
+    },
+    {
+      "kind": "page",
+      "routeId": "/login",
+      "routePath": "/login",
+      "params": [],
+      "routeDir": "app/routes/login",
+      "pageHtml": "app/routes/login/page.html",
+      "pageModule": "app/routes/login/page.ts",
+      "actionsModule": "app/routes/login/actions.ts"
+    },
+    {
+      "kind": "page",
+      "routeId": "/exercises/:id",
+      "routePath": "/exercises/:id",
+      "params": [
+        "id"
+      ],
+      "routeDir": "app/routes/exercises/[id]",
+      "pageHtml": "app/routes/exercises/[id]/page.html",
+      "pageModule": "app/routes/exercises/[id]/page.ts",
+      "actionsModule": "app/routes/exercises/[id]/actions.ts"
+    }
+  ]
+}
