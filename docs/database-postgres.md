@@ -2,8 +2,10 @@
 
 Postgres is the Boronix template for production-style deploys, Supabase, Neon, and local Postgres.
 
+Postgres works with Bun or Node runtime.
+
 ```bash
-npx create-boronix my-app --db postgres
+npx create-boronix my-app --runtime node --db postgres
 cd my-app
 npm install
 npm run db:generate
@@ -16,7 +18,7 @@ Generated dependencies:
 ```json
 {
   "dependencies": {
-    "boronix": "^0.4.1",
+    "boronix": "^0.4.2",
     "drizzle-orm": "latest",
     "postgres": "latest"
   },

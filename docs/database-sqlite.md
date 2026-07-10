@@ -2,8 +2,20 @@
 
 SQLite is the preferred Boronix database template for local/dev.
 
+SQLite requires Bun runtime because the generated client uses `bun:sqlite`.
+
 ```bash
-npx create-boronix my-app --db sqlite
+npx create-boronix my-app --runtime bun --db sqlite
+```
+
+This is intentionally rejected:
+
+```bash
+npx create-boronix my-app --runtime node --db sqlite
+```
+
+```bash
+npx create-boronix my-app --runtime bun --db sqlite
 cd my-app
 npm install
 npm run db:push
@@ -16,7 +28,7 @@ Generated dependencies:
 ```json
 {
   "dependencies": {
-    "boronix": "^0.4.1",
+    "boronix": "^0.4.2",
     "drizzle-orm": "latest"
   },
   "devDependencies": {

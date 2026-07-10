@@ -38,7 +38,7 @@ bun run dev
 With SQLite database scaffolding:
 
 ```bash
-npx create-boronix my-app --db sqlite
+npx create-boronix my-app --runtime bun --db sqlite
 cd my-app
 npm install
 npm run db:push
@@ -87,6 +87,8 @@ npm run dev
 ```
 
 Use SQLite for local/dev and small apps. Use Postgres for real deploys. See [Database docs](./docs/database.md).
+
+SQLite requires `--runtime bun` because the template uses `bun:sqlite`; Postgres works with Bun or Node.
 
 ### Dev output
 

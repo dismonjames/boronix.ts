@@ -6,8 +6,8 @@ import os from "node:os"
 console.log("Running smoke pack test...")
 
 const rootDir = path.resolve(".")
-const boronixTar = path.join(rootDir, "packages/boronix/boronix-0.4.1.tgz")
-const createTar = path.join(rootDir, "packages/create-boronix/create-boronix-0.4.1.tgz")
+const boronixTar = path.join(rootDir, "packages/boronix/boronix-0.4.2.tgz")
+const createTar = path.join(rootDir, "packages/create-boronix/create-boronix-0.4.2.tgz")
 
 // Clean old tarballs if exist
 if (existsSync(boronixTar)) rmSync(boronixTar)
@@ -102,6 +102,26 @@ try {
     process.exit(1)
   }
   console.log("✔ Inspect / parsed successfully:", parsedInspect.matched)
+
+  console.log("Testing create-boronix rejects SQLite on Node runtime...")
+  try {
+    execSync(`bun ${rootDir}/packages/create-boronix/dist/index.js sqlite-node-app --template basic --runtime node --db sqlite --no-install --no-git`, {
+      cwd: tempDir,
+      stdio: "pipe"
+    })
+    console.error("✖ SQLite scaffold should reject Node runtime")
+    process.exit(1)
+  } catch (err: any) {
+    const output = `${err.stdout?.toString() ?? ""}${err.stderr?.toString() ?? ""}`
+    if (!output.includes("KQ_CREATE_DB_RUNTIME_UNSUPPORTED")) {
+      console.error("✖ SQLite Node runtime rejection missing expected error code:", output)
+      process.exit(1)
+    }
+    if (existsSync(path.join(tempDir, "sqlite-node-app"))) {
+      console.error("✖ Rejected SQLite Node scaffold still created a project directory")
+      process.exit(1)
+    }
+  }
 
   console.log("Testing create-boronix SQLite database scaffold...")
   execSync(`bun ${rootDir}/packages/create-boronix/dist/index.js sqlite-app --template basic --runtime bun --db sqlite --no-install --no-git`, {

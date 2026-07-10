@@ -4,6 +4,16 @@ Boronix does not ship an ORM or database engine. Boronix uses Drizzle for databa
 
 Use SQLite for local development, prototypes, and small apps. Use Postgres for real deploy targets such as Supabase, Neon, or your own Postgres server.
 
+Runtime support:
+
+```txt
+--db sqlite   requires --runtime bun
+--db postgres works with bun or node
+--db none     works with bun or node
+```
+
+SQLite uses `bun:sqlite`, so Boronix intentionally rejects `create-boronix --db sqlite --runtime node`.
+
 ```bash
 npx create-boronix my-app --db sqlite
 cd my-app

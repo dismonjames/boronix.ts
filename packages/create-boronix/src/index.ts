@@ -117,6 +117,11 @@ async function run() {
   }
   db = db ?? "none"
 
+  if (db === "sqlite" && runtime === "node") {
+    console.error(`KQ_CREATE_DB_RUNTIME_UNSUPPORTED\n--db sqlite requires runtime "bun" because the SQLite template uses bun:sqlite.\nUse --runtime bun or choose --db postgres for Node.`)
+    process.exit(1)
+  }
+
   // Print summary card
   console.log(`  \x1b[32m✔\x1b[0m \x1b[90mproject\x1b[0m   \x1b[1m${projectName}\x1b[0m`)
   console.log(`  \x1b[32m✔\x1b[0m \x1b[90mtemplate\x1b[0m  \x1b[1m${template}\x1b[0m`)
@@ -157,11 +162,11 @@ async function run() {
       pkg.scripts["db:seed"] = "boronix db seed"
     }
 
-    // Set boronix version to ^0.4.1
+    // Set boronix version to ^0.4.2
     if (pkg.dependencies) {
       if (pkg.dependencies.boronix) delete pkg.dependencies.boronix
       if (pkg.dependencies["@boronix-ts/boronix"]) delete pkg.dependencies["@boronix-ts/boronix"]
-      pkg.dependencies["boronix"] = "^0.4.1"
+      pkg.dependencies["boronix"] = "^0.4.2"
       if (db === "sqlite") {
         pkg.dependencies["drizzle-orm"] = "latest"
         pkg.dependencies["@libsql/client"] = "latest"

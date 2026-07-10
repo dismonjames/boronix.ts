@@ -13,6 +13,8 @@ bun run dev
 
 Open `http://localhost:3000/notes`.
 
+SQLite requires `--runtime bun` because the generated client uses `bun:sqlite`. Use `--db postgres` for Node projects.
+
 The scaffolded app includes:
 
 ```txt

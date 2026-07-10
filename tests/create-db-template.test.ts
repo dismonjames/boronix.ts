@@ -42,7 +42,7 @@ test("create-boronix --db sqlite creates Drizzle SQLite files and scripts", () =
     expect(readFileSync(path.join(appPath, ".env.example"), "utf8")).toContain("DATABASE_URL=./local.db")
 
     const pkg = JSON.parse(readFileSync(path.join(appPath, "package.json"), "utf8"))
-    expect(pkg.dependencies.boronix).toBe("^0.4.1")
+    expect(pkg.dependencies.boronix).toBe("^0.4.2")
     expect(pkg.dependencies["drizzle-orm"]).toBe("latest")
     expect(pkg.devDependencies["drizzle-kit"]).toBe("latest")
     expect(pkg.devDependencies["@types/bun"]).toBe("latest")
@@ -86,6 +86,26 @@ test("create-boronix rejects invalid --db", () => {
     expect(result.exitCode).toBe(1)
     expect(stderr).toContain("KQ_CREATE_INVALID_DB")
     expect(stderr).toContain('Unsupported database option "mysql".')
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true })
+  }
+})
+
+test("create-boronix rejects sqlite with node runtime", () => {
+  const tempDir = path.join(os.tmpdir(), `boronix-db-template-sqlite-node-${Date.now()}`)
+  const appPath = path.join(tempDir, "my-app")
+
+  try {
+    const result = Bun.spawnSync({
+      cmd: ["bun", scriptPath, appPath, "--template", "basic", "--runtime", "node", "--db", "sqlite", "--no-install", "--no-git"],
+      stderr: "pipe",
+      stdout: "pipe"
+    })
+    const stderr = new TextDecoder().decode(result.stderr)
+    expect(result.exitCode).toBe(1)
+    expect(stderr).toContain("KQ_CREATE_DB_RUNTIME_UNSUPPORTED")
+    expect(stderr).toContain('--db sqlite requires runtime "bun"')
+    expect(existsSync(appPath)).toBe(false)
   } finally {
     rmSync(tempDir, { recursive: true, force: true })
   }

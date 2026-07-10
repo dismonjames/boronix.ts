@@ -18,9 +18,12 @@ test("database docs include Drizzle tutorial and CLI flow", () => {
   const tutorial = readFileSync("docs/tutorial-database.md", "utf8")
   expect(tutorial).toContain("npx create-boronix")
   expect(tutorial).toContain("--db sqlite")
+  expect(tutorial).toContain("--runtime bun")
   expect(tutorial).toContain("bun run db:push")
 
   const overview = readFileSync("docs/database.md", "utf8")
   expect(overview).toContain("Boronix does not ship an ORM")
   expect(overview).toContain("Drizzle")
+  expect(overview).toContain("--db sqlite   requires --runtime bun")
+  expect(overview).toContain("--db postgres works with bun or node")
 })

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.4.2 - SQLite Runtime Guard
+
+- Rejected `create-boronix --db sqlite --runtime node` with a clear runtime support error.
+- Documented that SQLite requires Bun because the template uses `bun:sqlite`.
+- Clarified that Postgres templates work with Bun or Node.
+
 ## v0.4.1 - Dev Error Overlay Polish
 
 - Refined the development error overlay with a more polished dark modal layout.

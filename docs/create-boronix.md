@@ -12,13 +12,23 @@ If you do not provide a project name, `create-boronix` runs interactively and pr
 1. **Project name**: The folder name.
 2. **Template**: Choose between `basic` (minimal start) and `homework` (dogfood reference).
 3. **Runtime**: Choose target runtime (`bun` or `node`).
-4. **Install dependencies**: Installs packages automatically.
-5. **Initialize git**: Configures a git repository inside the project.
+4. **Database**: Choose `none`, `sqlite`, or `postgres`.
+5. **Install dependencies**: Installs packages automatically.
+6. **Initialize git**: Configures a git repository inside the project.
 
 ## Non-Interactive Mode
 
 When a project name argument is passed, it builds using defaults:
 - **template**: basic
 - **runtime**: bun
+- **db**: none
 - **install**: false
 - **git**: false
+
+Database runtime support:
+
+```txt
+--db sqlite   requires --runtime bun
+--db postgres works with bun or node
+--db none     works with bun or node
+```
