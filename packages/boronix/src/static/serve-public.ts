@@ -67,7 +67,7 @@ export async function servePublic(publicDir: string, url: URL, req?: Request): P
     } catch {}
   }
 
-  const hasBun = typeof Bun !== "undefined"
+  const hasBun = typeof Bun !== "undefined" && !(Bun as any).isCompatMock
   const body = hasBun ? (Bun.file(filePath) as any) : readFileSync(filePath)
 
   return new Response(body, {

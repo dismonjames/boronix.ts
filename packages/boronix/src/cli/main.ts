@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 import { existsSync, readFileSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -15,6 +15,19 @@ import { dbCommand } from "./commands/db"
 import { initUiSettings } from "./ui/terminal"
 import { formatRootHelp, formatCommandHelp } from "./ui/format"
 import { formatCliError } from "./ui/errors"
+
+function checkNodeVersion(): void {
+  const version = process.versions.node
+  const [majorStr, minorStr] = version.split(".")
+  const major = parseInt(majorStr || "0", 10)
+  const minor = parseInt(minorStr || "0", 10)
+  if (major < 18 || (major === 18 && minor < 18)) {
+    console.error("KQ_NODE_VERSION_UNSUPPORTED\n")
+    console.error("Boronix requires Node.js 18.18 or newer.")
+    console.error(`Current version: ${version}`)
+    process.exit(1)
+  }
+}
 
 function getVersion(): string {
   try {
@@ -35,6 +48,7 @@ function getVersion(): string {
 }
 
 async function main(argv: string[]): Promise<void> {
+  checkNodeVersion()
   let parsed: CliArgs
   try {
     parsed = parseCliArgs(argv)

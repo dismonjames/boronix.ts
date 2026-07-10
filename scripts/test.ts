@@ -1,3 +1,3 @@
-import { $ } from "bun"
+import { execSync } from "node:child_process"
 
-await $`bun test`
+execSync("npx vitest run", { stdio: "inherit" })

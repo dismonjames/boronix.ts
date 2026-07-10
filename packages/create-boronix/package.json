@@ -1,6 +1,6 @@
 {
   "name": "create-boronix",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "description": "Create a new Boronix app.",
   "type": "module",
   "license": "MPL-2.0",
@@ -30,7 +30,10 @@
     "url": "https://github.com/dismonjames/boronix.ts/issues"
   },
   "scripts": {
-    "build": "rm -rf ./dist && bun build ./src/index.ts --outdir ./dist --target bun && tsc -p tsconfig.json --emitDeclarationOnly",
+    "build": "node ../../scripts/build-pkg-create-boronix.js && tsc -p tsconfig.json --emitDeclarationOnly",
     "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=18.18"
   }
 }

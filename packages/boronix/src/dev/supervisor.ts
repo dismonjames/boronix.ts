@@ -57,7 +57,7 @@ export async function startDevSupervisor(options: DevSupervisorOptions): Promise
     if (isPlain) {
       console.log("* Boronix\n")
       console.log("  mode      dev")
-      console.log(`  runtime   ${options.runtime ?? "bun"}`)
+      console.log(`  runtime   ${options.runtime ?? "node"}`)
       console.log(`  local     ${localUrl}`)
       if (message.host === "0.0.0.0" && getNetworkAddress()) console.log(`  network   http://${getNetworkAddress()}:${message.port}`)
       console.log(`  root      ${displayRoot}`)
@@ -66,7 +66,7 @@ export async function startDevSupervisor(options: DevSupervisorOptions): Promise
     } else {
       console.log(`${colors.brand(symbols.header())} ${colors.bold("Boronix")}`)
       console.log(`\n  ${colors.success(symbols.success())} ${colors.muted("mode").padEnd(9)} ${colors.bold("dev")}`)
-      console.log(`  ${colors.success(symbols.success())} ${colors.muted("runtime").padEnd(9)} ${colors.bold(options.runtime ?? "bun")}`)
+      console.log(`  ${colors.success(symbols.success())} ${colors.muted("runtime").padEnd(9)} ${colors.bold(options.runtime ?? "node")}`)
       console.log(`  ${colors.brand(symbols.redirect())} ${colors.muted("local").padEnd(9)} ${colors.bold(localUrl)}`)
       console.log(`  ${colors.bold(symbols.home())} ${colors.muted("root").padEnd(9)} ${colors.bold(displayRoot)}`)
       console.log(`  ${colors.brand(symbols.output())} ${colors.muted("reload").padEnd(9)} ${colors.bold(reloadEnabled ? "enabled" : "disabled")}`)
@@ -89,7 +89,7 @@ export async function startDevSupervisor(options: DevSupervisorOptions): Promise
     const start = performance.now()
     child = spawnDevChild({
       root: options.root,
-      runtime: options.runtime ?? "bun",
+      runtime: options.runtime ?? "node",
       port: options.port,
       host: options.host,
       revision: nextRevision,

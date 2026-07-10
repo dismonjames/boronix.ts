@@ -7,7 +7,7 @@
 
 Boronix is an HTML-first fullstack framework for TypeScript.
 
-Server-first, SSR-first, real HTML templates. No React. No client bundle by default. Bun is the primary runtime, Node is supported.
+Server-first, SSR-first, real HTML templates. No React. No client bundle by default. Node.js is the primary and default runtime, Bun is optional.
 
 ## Install
 
@@ -38,7 +38,7 @@ bun run dev
 With SQLite database scaffolding:
 
 ```bash
-npx create-boronix my-app --runtime bun --db sqlite
+npx create-boronix my-app --db sqlite
 cd my-app
 npm install
 npm run db:push
@@ -112,7 +112,7 @@ npm run dev
 
 Use SQLite for local/dev and small apps. Use Postgres for real deploys. See [Database docs](./docs/database.md).
 
-SQLite requires `--runtime bun` because the template uses `bun:sqlite`; Postgres works with Bun or Node.
+SQLite works with Node or Bun runtime; Postgres works with Bun or Node.
 
 ### Dev output
 
@@ -120,7 +120,7 @@ SQLite requires `--runtime bun` because the template uses `bun:sqlite`; Postgres
 ◆ Boronix
 
   ✔ mode      dev
-  ✔ runtime   bun
+  ✔ runtime   node
   ➜ local     http://localhost:3000
   ⌂ root      ~/my-app
   ◇ reload    enabled
@@ -146,7 +146,7 @@ Boronix uses full-page refresh rather than a hydration-based client runtime.
 ◆ Boronix
 
   mode      build
-  runtime   bun
+  runtime   node
   output    .boronix
 
   app/routes
@@ -195,7 +195,7 @@ users/[id]/page.html  → /users/:id
 import { defineConfig } from "boronix"
 
 export default defineConfig({
-  runtime: "bun",   // or "node"
+  runtime: "node",   // or "bun"
   port: 3000,
 })
 ```
@@ -258,8 +258,8 @@ boronix start --runtime node
 ## Run Examples
 
 ```bash
-bun run dev:basic
-bun run dev:homework
+npm run dev:basic
+npm run dev:homework
 ```
 
 ## Releases

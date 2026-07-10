@@ -1,8 +1,8 @@
-import { Database } from "bun:sqlite"
-import { drizzle } from "drizzle-orm/bun-sqlite"
+import { createClient } from "@libsql/client"
+import { drizzle } from "drizzle-orm/libsql"
 import * as schema from "./schema"
 
-const databaseUrl = process.env.DATABASE_URL ?? "./local.db"
-const sqlite = new Database(databaseUrl)
+const url = process.env.DATABASE_URL ?? "file:local.db"
+const client = createClient({ url })
 
-export const db = drizzle(sqlite, { schema })
+export const db = drizzle(client, { schema })

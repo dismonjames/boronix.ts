@@ -1,6 +1,9 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import os from "node:os"
+import { spawn } from "node:child_process"
+
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 const countIndex = process.argv.indexOf("--count")
 const count = countIndex >= 0 ? Number(process.argv[countIndex + 1]) : 100
@@ -9,9 +12,9 @@ if (!Number.isInteger(count) || count < 1) throw new Error("--count must be a po
 const root = path.join(os.tmpdir(), `boronix-stress-${Date.now()}`)
 const port = 4900 + Math.floor(Math.random() * 200)
 const bun = path.join(os.homedir(), ".bun", "bin", "bun")
-const modulePath = path.join(root, "app", "routes", "home", "page.ts")
+const modulePath = path.join(root, "app", "routes", "page.ts")
 mkdirSync(path.dirname(modulePath), { recursive: true })
-writeFileSync(path.join(root, "app", "routes", "home", "page.html"), "<main>{{ message }} {{ pid }}</main>")
+writeFileSync(path.join(root, "app", "routes", "page.html"), "<main>{{ message }} {{ pid }}</main>")
 writeFileSync(modulePath, 'export default () => ({ message: "generation-0", pid: process.pid })\n')
 
 async function fetchPage(): Promise<string> {
@@ -26,16 +29,14 @@ async function waitFor(marker: string): Promise<string> {
       const html = await fetchPage()
       if (html.includes(marker)) return html
     } catch {}
-    await Bun.sleep(25)
+    await sleep(25)
   }
   throw new Error(`timeout waiting for ${marker}`)
 }
 
-const supervisor = Bun.spawn({
-  cmd: [bun, "run", "packages/boronix/src/cli/main.ts", "dev", "--root", root, "--runtime", "bun", "--port", String(port), "--host", "127.0.0.1", "--plain", "--quiet"],
+const supervisor = spawn("node", ["--import=tsx", "packages/boronix/src/cli/main.ts", "dev", "--root", root, "--runtime", "node", "--port", String(port), "--host", "127.0.0.1", "--plain", "--quiet"], {
   cwd: path.resolve("."),
-  stdout: "ignore",
-  stderr: "ignore"
+  stdio: "ignore"
 })
 
 const durations: number[] = []
@@ -65,6 +66,7 @@ try {
   if (failures) process.exitCode = 1
 } finally {
   try { supervisor.kill("SIGTERM") } catch {}
-  await Promise.race([supervisor.exited, Bun.sleep(5000)])
+  const exitedPromise = new Promise(resolve => supervisor.on("exit", resolve))
+  await Promise.race([exitedPromise, sleep(5000)])
   rmSync(root, { recursive: true, force: true })
 }

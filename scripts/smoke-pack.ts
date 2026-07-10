@@ -1,13 +1,30 @@
 import { existsSync, mkdirSync, rmSync, readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
-import { execSync } from "node:child_process"
+import { execSync, spawn as nodeSpawn } from "node:child_process"
 import os from "node:os"
+
+if (typeof (globalThis as any).Bun === "undefined") {
+  (globalThis as any).Bun = {
+    spawn: (options: any) => {
+      return nodeSpawn(options.cmd[0], options.cmd.slice(1), {
+        cwd: options.cwd,
+        env: options.env ?? process.env,
+        stdio: [
+          options.stdin === "pipe" ? "pipe" : "ignore",
+          options.stdout === "pipe" ? "pipe" : "ignore",
+          options.stderr === "pipe" ? "pipe" : "ignore"
+        ]
+      })
+    }
+  }
+}
 
 console.log("Running smoke pack test...")
 
 const rootDir = path.resolve(".")
-const boronixTar = path.join(rootDir, "packages/boronix/boronix-0.6.1.tgz")
-const createTar = path.join(rootDir, "packages/create-boronix/create-boronix-0.6.1.tgz")
+const version = JSON.parse(readFileSync(path.join(rootDir, "package.json"), "utf8")).version
+const boronixTar = path.join(rootDir, `packages/boronix/boronix-${version}.tgz`)
+const createTar = path.join(rootDir, `packages/create-boronix/create-boronix-${version}.tgz`)
 
 // Clean old tarballs if exist
 if (existsSync(boronixTar)) rmSync(boronixTar)
@@ -124,12 +141,15 @@ try {
   const smokePort = 3999
   console.log(`Starting production server on port ${smokePort} for smoke test...`)
   const serverProc = Bun.spawn({
-    cmd: ["bunx", "boronix", "start", "--port", String(smokePort)],
+    cmd: ["bun", "node_modules/.bin/boronix", "start", "--port", String(smokePort)],
     cwd: appPath,
     stdout: "pipe",
     stderr: "pipe",
     env: { ...process.env, BORONIX_SESSION_SECRET: "smoke-test-secret" }
   })
+
+  serverProc.stdout?.pipe(process.stdout)
+  serverProc.stderr?.pipe(process.stderr)
 
   // Wait for server to be ready
   await new Promise(resolve => setTimeout(resolve, 3000))
@@ -214,12 +234,15 @@ try {
   console.log("Starting dev server smoke test...")
   const devPort = 3998
   const devProc = Bun.spawn({
-    cmd: ["bunx", "boronix", "dev", "--port", String(devPort), "--no-color"],
+    cmd: ["bun", "node_modules/.bin/boronix", "dev", "--port", String(devPort), "--no-color"],
     cwd: appPath,
     stdout: "pipe",
     stderr: "pipe",
     env: { ...process.env, BORONIX_SESSION_SECRET: "smoke-test-secret" }
   })
+
+  devProc.stdout?.pipe(process.stdout)
+  devProc.stderr?.pipe(process.stderr)
 
   await new Promise(resolve => setTimeout(resolve, 3000))
 
@@ -342,16 +365,12 @@ try {
   })
   const nodeAppPath = path.join(tempDir, "node-app")
   const nodeAppPkg = JSON.parse(readFileSync(path.join(nodeAppPath, "package.json"), "utf8"))
-  if (nodeAppPkg.devDependencies?.tsx !== "^4") {
-    console.error("✖ Node scaffold is missing project-local tsx")
-    process.exit(1)
-  }
   delete nodeAppPkg.dependencies.boronix
   writeFileSync(path.join(nodeAppPath, "package.json"), JSON.stringify(nodeAppPkg, null, 2), "utf8")
   execSync(`bun add ${boronixTar}`, { cwd: nodeAppPath, stdio: "inherit" })
   const nodePort = 3997
   const nodeDevProc = Bun.spawn({
-    cmd: ["bunx", "boronix", "dev", "--runtime", "node", "--port", String(nodePort), "--host", "127.0.0.1", "--plain"],
+    cmd: ["npx", "boronix", "dev", "--runtime", "node", "--port", String(nodePort), "--host", "127.0.0.1", "--plain"],
     cwd: nodeAppPath,
     stdout: "pipe",
     stderr: "pipe"
@@ -387,28 +406,8 @@ try {
     try { process.kill(nodeDevProc.pid, "SIGKILL") } catch {}
   }
 
-  console.log("Testing create-boronix rejects SQLite on Node runtime...")
-  try {
-    execSync(`bun ${rootDir}/packages/create-boronix/dist/index.js sqlite-node-app --template basic --runtime node --db sqlite --no-install --no-git`, {
-      cwd: tempDir,
-      stdio: "pipe"
-    })
-    console.error("✖ SQLite scaffold should reject Node runtime")
-    process.exit(1)
-  } catch (err: any) {
-    const output = `${err.stdout?.toString() ?? ""}${err.stderr?.toString() ?? ""}`
-    if (!output.includes("KQ_CREATE_DB_RUNTIME_UNSUPPORTED")) {
-      console.error("✖ SQLite Node runtime rejection missing expected error code:", output)
-      process.exit(1)
-    }
-    if (existsSync(path.join(tempDir, "sqlite-node-app"))) {
-      console.error("✖ Rejected SQLite Node scaffold still created a project directory")
-      process.exit(1)
-    }
-  }
-
-  console.log("Testing create-boronix SQLite database scaffold...")
-  execSync(`bun ${rootDir}/packages/create-boronix/dist/index.js sqlite-app --template basic --runtime bun --db sqlite --no-install --no-git`, {
+  console.log("Testing create-boronix SQLite database scaffold under Node runtime...")
+  execSync(`bun ${rootDir}/packages/create-boronix/dist/index.js sqlite-app --template basic --runtime node --db sqlite --no-install --no-git`, {
     cwd: tempDir,
     stdio: "inherit"
   })
@@ -429,25 +428,25 @@ try {
 
   console.log("Installing SQLite app dependencies...")
   execSync(`bun add ${boronixTar}`, { cwd: sqliteAppPath, stdio: "inherit" })
-  execSync("bun install", { cwd: sqliteAppPath, stdio: "inherit" })
+  execSync("npm install", { cwd: sqliteAppPath, stdio: "inherit" })
 
   console.log("Running SQLite app doctor...")
-  execSync("bunx boronix doctor", { cwd: sqliteAppPath, stdio: "inherit" })
+  execSync("npx boronix doctor", { cwd: sqliteAppPath, stdio: "inherit" })
 
   console.log("Running SQLite app typegen...")
-  execSync("bunx boronix typegen", { cwd: sqliteAppPath, stdio: "inherit" })
+  execSync("npx boronix typegen", { cwd: sqliteAppPath, stdio: "inherit" })
 
   console.log("Running SQLite app db push...")
-  execSync("bunx boronix db push", { cwd: sqliteAppPath, stdio: "inherit" })
+  execSync("npx boronix db push", { cwd: sqliteAppPath, stdio: "inherit" })
 
   console.log("Running SQLite app db seed...")
-  execSync("bunx boronix db seed", { cwd: sqliteAppPath, stdio: "inherit" })
+  execSync("npx boronix db seed", { cwd: sqliteAppPath, stdio: "inherit" })
 
   console.log("Running SQLite app build...")
-  execSync("bunx boronix build", { cwd: sqliteAppPath, stdio: "inherit" })
+  execSync("npx boronix build", { cwd: sqliteAppPath, stdio: "inherit" })
 
   console.log("Running SQLite app routes --json...")
-  const sqliteRoutesJson = execSync("bunx boronix routes --json", { cwd: sqliteAppPath }).toString()
+  const sqliteRoutesJson = execSync("npx boronix routes --json", { cwd: sqliteAppPath }).toString()
   const parsedSqliteRoutes = JSON.parse(sqliteRoutesJson)
   if (!Array.isArray(parsedSqliteRoutes) || !parsedSqliteRoutes.some((route: any) => route.path === "/notes")) {
     console.error("✖ SQLite routes JSON missing /notes:", sqliteRoutesJson)
@@ -455,7 +454,7 @@ try {
   }
 
   console.log("Running SQLite app inspect /notes --json...")
-  const sqliteInspectJson = execSync("bunx boronix inspect /notes --json", { cwd: sqliteAppPath }).toString()
+  const sqliteInspectJson = execSync("npx boronix inspect /notes --json", { cwd: sqliteAppPath }).toString()
   const parsedSqliteInspect = JSON.parse(sqliteInspectJson)
   if (!parsedSqliteInspect.success) {
     console.error("✖ Inspect /notes failed:", sqliteInspectJson)
@@ -484,7 +483,7 @@ try {
   mkdirSync(noBuildPath, { recursive: true })
   writeFileSync(path.join(noBuildPath, "package.json"), JSON.stringify({ name: "no-build-test", private: true }), "utf8")
   try {
-    execSync(`bun ${rootDir}/packages/boronix/dist/cli/main.js start --root ${noBuildPath}`, {
+    execSync(`node ${rootDir}/packages/boronix/dist/cli/main.js start --root ${noBuildPath}`, {
       stdio: "pipe"
     })
     console.error("✖ Start without build manifest should fail")
@@ -506,7 +505,7 @@ try {
   mkdirSync(path.join(corruptPath, ".boronix"), { recursive: true })
   writeFileSync(path.join(corruptPath, ".boronix", "manifest.json"), "{invalid", "utf8")
   try {
-    execSync(`bun ${rootDir}/packages/boronix/dist/cli/main.js start --root ${corruptPath}`, {
+    execSync(`node ${rootDir}/packages/boronix/dist/cli/main.js start --root ${corruptPath}`, {
       stdio: "pipe"
     })
     console.error("✖ Start with corrupt manifest should fail")

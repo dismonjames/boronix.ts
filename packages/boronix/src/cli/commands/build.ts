@@ -195,19 +195,8 @@ export async function buildCommand(
     throw firstError
   }
 
-  // Write actual build manifest
-  writeBuildOutput(root, {
-    version: 1,
-    frameworkVersion: "0.6.1",
-    createdAt: new Date().toISOString(),
-    runtime: runtimeName as "bun" | "node",
-    mode: "production",
-    root: path.resolve(root),
-    routes,
-    output: {
-      directory: ".boronix"
-    }
-  })
+  // Write actual build manifest and compile assets
+  await writeBuildOutput(root, config, routes, runtimeName as "bun" | "node")
 
   const totalDuration = Math.round(performance.now() - startTime)
   if (isPlain) {

@@ -37,18 +37,7 @@ export async function build(root: string, runtimeOverride?: ResolvedBoronixConfi
   }
 
   const resolvedRoot = path.resolve(root)
-  writeBuildOutput(root, {
-    version: 1,
-    frameworkVersion: "0.6.1",
-    createdAt: new Date().toISOString(),
-    runtime: runtimeName as "bun" | "node",
-    mode: "production",
-    root: resolvedRoot,
-    routes,
-    output: {
-      directory: ".boronix"
-    }
-  })
+  await writeBuildOutput(root, config, routes, runtimeName as "bun" | "node")
 
   console.log("Boronix build")
   console.log("")

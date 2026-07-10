@@ -11,7 +11,10 @@
     "typegen": "boronix typegen"
   },
   "dependencies": {
-    "boronix": "^0.6.1"
+    "boronix": "^0.7.0"
   },
-  "version": "0.6.1"
+  "engines": {
+    "node": ">=18.18"
+  },
+  "version": "0.7.0"
 }

@@ -34,7 +34,7 @@ export async function startCommand(
   // 2. Read and validate build manifest
   const manifest = readBuildManifest(resolvedRoot)
 
-  const runtimeName = options.runtime ?? manifest.runtime ?? "bun"
+  const runtimeName = options.runtime ?? manifest.runtime ?? "node"
 
   if (runtimeName === "deno") {
     throw new BoronixUserError("Deno runtime is not implemented yet.", {
@@ -44,9 +44,14 @@ export async function startCommand(
   }
 
   // validateBuildManifest throws KQ_BUILD_RUNTIME_MISMATCH if runtime does not match
-  validateBuildManifest(manifest, runtimeName as "bun" | "node")
+  validateBuildManifest(manifest, runtimeName as "bun" | "node", resolvedRoot)
 
   // 3. Resolve port and host priority: CLI flags -> config -> environment variables -> defaults
+  // Import the compiled production entry.js first so global config and modules are loaded
+  const entryPath = path.resolve(resolvedRoot, manifest.output.serverEntry || ".boronix/server/entry.js")
+  const { pathToFileURL } = await import("node:url")
+  await import(pathToFileURL(entryPath).href)
+
   const config = await loadConfig(resolvedRoot)
 
   const hasConfig = existsSync(path.join(resolvedRoot, "boronix.config.ts"))
@@ -62,11 +67,22 @@ export async function startCommand(
 
   initUiSettings({ plain: options.plain, noColor: options.noColor }, config.cli)
 
+  // Resolve relative routes to absolute paths
+  const absoluteRoutes = manifest.routes.map((route: any) => {
+    const copy = { ...route }
+    if (copy.routeDir) copy.routeDir = path.resolve(resolvedRoot, copy.routeDir)
+    if (copy.pageHtml) copy.pageHtml = path.resolve(resolvedRoot, copy.pageHtml)
+    if (copy.pageModule) copy.pageModule = path.resolve(resolvedRoot, copy.pageModule)
+    if (copy.apiModule) copy.apiModule = path.resolve(resolvedRoot, copy.apiModule)
+    if (copy.actionsModule) copy.actionsModule = path.resolve(resolvedRoot, copy.actionsModule)
+    return copy
+  })
+
   // 5. Create production app
   const app = createBoronixApp({
     root: resolvedRoot,
     config,
-    manifest: manifest.routes,
+    manifest: absoluteRoutes,
     quiet: options.quiet,
     verbose: options.verbose,
     plain: options.plain

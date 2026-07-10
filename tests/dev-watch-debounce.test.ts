@@ -34,6 +34,8 @@ test("watcher detects file modify", async () => {
     onChange: (c) => { changes = c }
   })
 
+  await Bun.sleep(200)
+
   writeFileSync(filePath, "<h1>Updated</h1>")
 
   await waitForCondition(() => changes.length > 0)
@@ -56,6 +58,8 @@ test("watcher detects file create", async () => {
     debounceMs: 30,
     onChange: (c) => { changes = c }
   })
+
+  await Bun.sleep(200)
 
   mkdirSync(path.join(root, "app", "routes", "about"), { recursive: true })
   writeFileSync(path.join(root, "app", "routes", "about", "page.html"), "<h1>About</h1>")
@@ -81,6 +85,8 @@ test("watcher debounces duplicate events", async () => {
     debounceMs: 50,
     onChange: () => { changeCount++ }
   })
+
+  await Bun.sleep(200)
 
   writeFileSync(filePath, "<h1>1</h1>")
   writeFileSync(filePath, "<h1>2</h1>")
@@ -132,6 +138,8 @@ test("watcher ignores .boronix directory", async () => {
     debounceMs: 30,
     onChange: (c) => { changes = changes.concat(c) }
   })
+
+  await Bun.sleep(200)
 
   writeFileSync(path.join(root, ".boronix", "manifest.json"), "{}")
 

@@ -1,6 +1,6 @@
 {
   "name": "boronix",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "description": "HTML-first fullstack framework for TypeScript.",
   "type": "module",
   "license": "MPL-2.0",
@@ -10,7 +10,8 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     }
   },
   "files": [
@@ -37,7 +38,15 @@
     "url": "https://github.com/dismonjames/boronix.ts/issues"
   },
   "scripts": {
-    "build": "rm -rf ./dist && bun build ./src/index.ts ./src/cli/main.ts ./src/dev/worker.ts --outdir ./dist --target bun && tsc -p tsconfig.json --emitDeclarationOnly",
+    "build": "node ../../scripts/build-pkg-boronix.js && tsc -p tsconfig.json --emitDeclarationOnly",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "tsx": "^4.23.0",
+    "esbuild": "^0.25.0",
+    "chokidar": "^3.6.0"
+  },
+  "engines": {
+    "node": ">=18.18"
   }
 }

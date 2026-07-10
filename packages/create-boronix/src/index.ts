@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 import { cpSync, existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -6,16 +6,30 @@ import { execSync } from "node:child_process"
 import readline from "node:readline/promises"
 import { stdin as input, stdout as output } from "node:process"
 
+function checkNodeVersion(): void {
+  const version = process.versions.node
+  const [majorStr, minorStr] = version.split(".")
+  const major = parseInt(majorStr || "0", 10)
+  const minor = parseInt(minorStr || "0", 10)
+  if (major < 18 || (major === 18 && minor < 18)) {
+    console.error("KQ_NODE_VERSION_UNSUPPORTED\n")
+    console.error("Boronix requires Node.js 18.18 or newer.")
+    console.error(`Current version: ${version}`)
+    process.exit(1)
+  }
+}
+
 const packageRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const validDbOptions = ["none", "sqlite", "postgres"] as const
 type DbOption = typeof validDbOptions[number]
 
 async function run() {
+  checkNodeVersion()
   console.log("\x1b[38;5;208m◆\x1b[0m \x1b[1mcreate-boronix\x1b[0m\n")
 
   let projectName = ""
   let template = "basic"
-  let runtime = "bun"
+  let runtime = "node"
   let db: DbOption | undefined = undefined
   let install = false
   let git = false
@@ -81,9 +95,10 @@ async function run() {
       template = tClean === "homework" ? "homework" : "basic"
 
       // 3. Runtime
-      const runtimeAns = await rl.question("Runtime: bun / node (bun): ")
+      console.log("Runtime\n● Node.js\n○ Bun")
+      const runtimeAns = await rl.question("Select runtime (node): ")
       const rClean = runtimeAns.trim().toLowerCase()
-      runtime = rClean === "node" ? "node" : "bun"
+      runtime = rClean === "bun" ? "bun" : "node"
 
       // 4. Database
       const dbAns = await rl.question("Add database? none / sqlite / postgres (none): ")
@@ -117,10 +132,6 @@ async function run() {
   }
   db = db ?? "none"
 
-  if (db === "sqlite" && runtime === "node") {
-    console.error(`KQ_CREATE_DB_RUNTIME_UNSUPPORTED\n--db sqlite requires runtime "bun" because the SQLite template uses bun:sqlite.\nUse --runtime bun or choose --db postgres for Node.`)
-    process.exit(1)
-  }
 
   // Print summary card
   console.log(`  \x1b[32m✔\x1b[0m \x1b[90mproject\x1b[0m   \x1b[1m${projectName}\x1b[0m`)
@@ -163,11 +174,11 @@ async function run() {
       pkg.scripts["db:seed"] = "boronix db seed"
     }
 
-    // Set boronix version to ^0.6.1
+    // Set boronix version to ^0.7.0
     if (pkg.dependencies) {
       if (pkg.dependencies.boronix) delete pkg.dependencies.boronix
       if (pkg.dependencies["@boronix-ts/boronix"]) delete pkg.dependencies["@boronix-ts/boronix"]
-      pkg.dependencies["boronix"] = "^0.6.1"
+      pkg.dependencies["boronix"] = "^0.7.0"
       if (db === "sqlite") {
         pkg.dependencies["drizzle-orm"] = "latest"
         pkg.dependencies["@libsql/client"] = "latest"
@@ -179,8 +190,10 @@ async function run() {
     if (db === "sqlite") {
       pkg.devDependencies = {
         ...(pkg.devDependencies ?? {}),
-        "drizzle-kit": "latest",
-        "@types/bun": "latest"
+        "drizzle-kit": "latest"
+      }
+      if (runtime === "bun") {
+        pkg.devDependencies["@types/bun"] = "latest"
       }
     } else if (db === "postgres") {
       pkg.devDependencies = {
@@ -188,15 +201,9 @@ async function run() {
         "drizzle-kit": "latest"
       }
     }
-    if (runtime === "node") {
-      pkg.engines = {
-        ...(pkg.engines ?? {}),
-        node: ">=18.18"
-      }
-      pkg.devDependencies = {
-        ...(pkg.devDependencies ?? {}),
-        "tsx": "^4"
-      }
+    pkg.engines = {
+      ...(pkg.engines ?? {}),
+      node: ">=18.18"
     }
 
     writeFileSync(pkgPath, JSON.stringify(pkg, null, 2), "utf8")
@@ -240,7 +247,7 @@ async function run() {
   if (installFailed) {
     console.log(`\x1b[33m⚠\x1b[0m dependency install failed\n`)
     console.log(`Hint:`)
-    console.log(`  Run \`bun install\` manually.\n`)
+    console.log(`  Run \`${runtime === "bun" ? "bun" : "npm"} install\` manually.\n`)
   }
 
   console.log("\x1b[1mNext steps\x1b[0m")
@@ -268,7 +275,7 @@ function writeDatabaseFiles(targetDir: string, db: DbOption): void {
   mkdirSync(path.join(targetDir, "app", "routes", "notes"), { recursive: true })
 
   if (db === "sqlite") {
-    writeFileSync(path.join(targetDir, ".env.example"), "DATABASE_URL=./local.db\n", "utf8")
+    writeFileSync(path.join(targetDir, ".env.example"), "DATABASE_URL=file:local.db\n", "utf8")
     writeFileSync(path.join(targetDir, "app/db/schema.ts"), `import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core"
 
 export const notes = sqliteTable("notes", {
@@ -278,14 +285,14 @@ export const notes = sqliteTable("notes", {
   createdAt: integer("created_at", { mode: "timestamp" }).notNull()
 })
 `, "utf8")
-    writeFileSync(path.join(targetDir, "app/db/client.ts"), `import { Database } from "bun:sqlite"
-import { drizzle } from "drizzle-orm/bun-sqlite"
+    writeFileSync(path.join(targetDir, "app/db/client.ts"), `import { createClient } from "@libsql/client"
+import { drizzle } from "drizzle-orm/libsql"
 import * as schema from "./schema"
 
-const databaseUrl = process.env.DATABASE_URL ?? "./local.db"
-const sqlite = new Database(databaseUrl)
+const url = process.env.DATABASE_URL ?? "file:local.db"
+const client = createClient({ url })
 
-export const db = drizzle(sqlite, { schema })
+export const db = drizzle(client, { schema })
 `, "utf8")
     writeFileSync(path.join(targetDir, "app/db/seed.ts"), `import { db } from "./client"
 import { notes } from "./schema"
@@ -305,7 +312,7 @@ export default defineConfig({
   out: "./drizzle",
   dialect: "sqlite",
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? "./local.db"
+    url: process.env.DATABASE_URL ?? "file:local.db"
   }
 })
 `, "utf8")

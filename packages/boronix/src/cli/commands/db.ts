@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs"
 import path from "node:path"
 import { execFileSync } from "node:child_process"
+import { createRequire } from "node:module"
 import { BoronixUserError } from "../../core/errors"
 import { initUiSettings, areColorsEnabled } from "../ui/terminal"
 import { colors } from "../ui/colors"
@@ -55,9 +56,17 @@ function resolveDrizzleKit(root: string): string {
   if (existsSync(pkgPath)) {
     const pkg = JSON.parse(readFileSync(pkgPath, "utf8"))
     const hasDependency = Boolean(pkg.devDependencies?.["drizzle-kit"] ?? pkg.dependencies?.["drizzle-kit"])
-    const localBin = path.join(root, "node_modules", ".bin", process.platform === "win32" ? "drizzle-kit.cmd" : "drizzle-kit")
-    if (hasDependency && existsSync(localBin)) {
-      return localBin
+    if (hasDependency) {
+      let currentDir = root
+      while (true) {
+        const localBin = path.join(currentDir, "node_modules", ".bin", process.platform === "win32" ? "drizzle-kit.cmd" : "drizzle-kit")
+        if (existsSync(localBin)) {
+          return localBin
+        }
+        const parent = path.dirname(currentDir)
+        if (parent === currentDir) break
+        currentDir = parent
+      }
     }
   }
 
@@ -88,7 +97,18 @@ function runSeed(root: string): void {
   }
 
   try {
-    execFileSync("bun", [seedPath], { cwd: root, stdio: "inherit", env: process.env })
+    if (typeof globalThis.Bun !== "undefined") {
+      execFileSync("bun", [seedPath], { cwd: root, stdio: "inherit", env: process.env })
+    } else {
+      const require = createRequire(import.meta.url)
+      let tsxLoader: string
+      try {
+        tsxLoader = import.meta.resolve("tsx")
+      } catch {
+        tsxLoader = require.resolve("tsx")
+      }
+      execFileSync("node", ["--import", tsxLoader, seedPath], { cwd: root, stdio: "inherit", env: process.env })
+    }
   } catch (cause) {
     throw new BoronixUserError("Database seed failed.", {
       code: "KQ_DB_COMMAND_FAILED",

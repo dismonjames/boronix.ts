@@ -2,7 +2,10 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true,
-    "types": ["bun"]
+    "types": ["node"],
+    "paths": {
+      "bun:test": ["./tests/bun-test-compat.ts"]
+    }
   },
   "include": [
     "packages/**/*.ts",

@@ -7,22 +7,24 @@
     "examples/*"
   ],
   "scripts": {
-    "build": "bun run scripts/build.ts",
-    "test": "bun test",
+    "build": "tsx scripts/build.ts",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "pack:boronix": "cd packages/boronix && bun pm pack",
-    "pack:create": "cd packages/create-boronix && bun pm pack",
-    "release:check": "bun run scripts/release-check.ts",
-    "smoke:pack": "bun run scripts/smoke-pack.ts",
-    "stress:dev-reload": "bun run scripts/stress-dev-restart.ts",
-    "dev:basic": "bun run packages/boronix/src/cli/main.ts dev --root examples/basic",
-    "start:basic": "bun run packages/boronix/src/cli/main.ts start --root examples/basic",
-    "dev:homework": "bun run packages/boronix/src/cli/main.ts dev --root examples/homework"
+    "pack:boronix": "cd packages/boronix && npm pack",
+    "pack:create": "cd packages/create-boronix && npm pack",
+    "release:check": "tsx scripts/release-check.ts",
+    "smoke:pack": "tsx scripts/smoke-pack.ts",
+    "stress:dev-reload": "tsx scripts/stress-dev-restart.ts",
+    "dev:basic": "node --import=tsx packages/boronix/src/cli/main.ts dev --root examples/basic",
+    "start:basic": "node --import=tsx packages/boronix/src/cli/main.ts start --root examples/basic",
+    "dev:homework": "node --import=tsx packages/boronix/src/cli/main.ts dev --root examples/homework"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "tsx": "^4",
-    "typescript": "latest"
+    "@types/node": "^22.10.1",
+    "tsx": "^4.23.0",
+    "typescript": "latest",
+    "esbuild": "^0.25.0",
+    "vitest": "^2.1.8"
   },
-  "version": "0.6.1"
+  "version": "0.7.0"
 }

@@ -1,4 +1,4 @@
-import { watch, type FSWatcher } from "node:fs"
+import chokidar from "chokidar"
 import path from "node:path"
 import { isIgnoredPath } from "./change-classifier"
 import type { DevFileChangeEvent, DevFileChange } from "./types"
@@ -11,12 +11,6 @@ export type WatcherOptions = {
   debug?: boolean | undefined
 }
 
-type PendingEvent = {
-  event: DevFileChangeEvent
-  absolutePath: string
-  timestamp: number
-}
-
 export type FileWatcher = {
   close(): void
 }
@@ -24,8 +18,7 @@ export type FileWatcher = {
 export function createFileWatcher(options: WatcherOptions): FileWatcher {
   const debounceMs = options.debounceMs ?? 50
   const root = options.root
-  const watchers: FSWatcher[] = []
-  let pending = new Map<string, PendingEvent>()
+  let pending = new Map<string, { event: DevFileChangeEvent; timestamp: number }>()
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
   let closed = false
 
@@ -42,17 +35,17 @@ export function createFileWatcher(options: WatcherOptions): FileWatcher {
     if (pending.size === 0) return
 
     const changes: DevFileChange[] = []
-    const events = [...pending.values()]
+    const events = [...pending.entries()]
     pending.clear()
 
-    for (const evt of events) {
-      const relativePath = path.relative(root, evt.absolutePath).split(path.sep).join("/")
+    for (const [absolutePath, evt] of events) {
+      const relativePath = path.relative(root, absolutePath).split(path.sep).join("/")
       if (isIgnoredPath(relativePath)) continue
 
       changes.push({
         event: evt.event,
         kind: "unknown",
-        absolutePath: evt.absolutePath,
+        absolutePath,
         relativePath,
         detectedAt: evt.timestamp
       })
@@ -70,51 +63,32 @@ export function createFileWatcher(options: WatcherOptions): FileWatcher {
     }
   }
 
-  function handleEvent(eventName: DevFileChangeEvent, filePath: string): void {
+  function handleEvent(eventName: DevFileChangeEvent, absolutePath: string): void {
     if (closed) return
-    const absolutePath = path.resolve(filePath)
-    const relativePath = path.relative(root, absolutePath).split(path.sep).join("/")
+    const resolvedPath = path.resolve(absolutePath)
+    const relativePath = path.relative(root, resolvedPath).split(path.sep).join("/")
     if (isIgnoredPath(relativePath)) return
 
-    const existing = pending.get(absolutePath)
-    if (existing) {
-      if (existing.event === "remove" && eventName === "create") {
-        pending.set(absolutePath, { event: "modify", absolutePath, timestamp: Date.now() })
-      } else if (existing.event === "create" && eventName === "remove") {
-        pending.delete(absolutePath)
-      } else if (eventName === "rename") {
-        pending.set(absolutePath, { event: "rename", absolutePath, timestamp: Date.now() })
-      } else {
-        existing.timestamp = Date.now()
-      }
-    } else {
-      pending.set(absolutePath, { event: eventName, absolutePath, timestamp: Date.now() })
-    }
-
+    pending.set(resolvedPath, { event: eventName, timestamp: Date.now() })
     scheduleFlush()
   }
 
-  for (const watchPath of options.watchPaths) {
-    try {
-      const w = watch(watchPath, { recursive: true }, (event, filename) => {
-        if (!filename) return
-        const fullPath = path.join(watchPath, filename)
-        const evt: DevFileChangeEvent = event === "rename" ? "rename" : "modify"
-        handleEvent(evt, fullPath)
-      })
-      watchers.push(w)
-    } catch {
-      try {
-        const w = watch(watchPath, { recursive: false }, (event, filename) => {
-          if (!filename) return
-          const fullPath = path.join(watchPath, filename)
-          const evt: DevFileChangeEvent = event === "rename" ? "rename" : "modify"
-          handleEvent(evt, fullPath)
-        })
-        watchers.push(w)
-      } catch {}
-    }
-  }
+  const watcher = chokidar.watch(options.watchPaths, {
+    ignored: (p: string) => {
+      const rel = path.relative(root, p).split(path.sep).join("/")
+      if (rel === "") return false
+      return isIgnoredPath(rel)
+    },
+    ignoreInitial: true,
+    persistent: true
+  })
+
+  watcher.on("add", (p: string) => handleEvent("create", p))
+  watcher.on("change", (p: string) => handleEvent("modify", p))
+  watcher.on("unlink", (p: string) => handleEvent("remove", p))
+  watcher.on("addDir", (p: string) => handleEvent("create", p))
+  watcher.on("unlinkDir", (p: string) => handleEvent("remove", p))
+  watcher.on("error", () => {})
 
   return {
     close(): void {
@@ -124,11 +98,7 @@ export function createFileWatcher(options: WatcherOptions): FileWatcher {
         debounceTimer = null
       }
       pending.clear()
-      for (const w of watchers) {
-        try {
-          w.close()
-        } catch {}
-      }
+      void watcher.close()
     }
   }
 }

@@ -33,6 +33,9 @@ export type BoronixAppOptions = {
 export function createBoronixApp(options: BoronixAppOptions): { fetch(req: Request): Promise<Response> } {
   // If in production, and session is used, check secret
   const isProd = !options.dev
+  const origRoutesDir = resolvePath(options.root, options.config.app.routesDir)
+  const hasBuildDir = existsSync(path.resolve(options.root, ".boronix"))
+
   if (isProd) {
     const hasSession = detectSessionUsage(options.root)
     const isSecretDefault = !options.config.session.secret || options.config.session.secret === "boronix-dev-session-secret"
@@ -44,6 +47,34 @@ export function createBoronixApp(options: BoronixAppOptions): { fetch(req: Reque
           hint: "Set session.secret in boronix.config.ts or provide BORONIX_SESSION_SECRET."
         }
       )
+    }
+
+    if (hasBuildDir) {
+      options.config.app.root = ".boronix/templates"
+      options.config.app.routesDir = ".boronix/templates/routes"
+      options.config.app.publicDir = ".boronix/public"
+
+      if (options.manifest) {
+        options.manifest = options.manifest.map(item => {
+          const relDir = path.relative(origRoutesDir, item.routeDir)
+          const prodRoutesDir = path.resolve(options.root, ".boronix/templates/routes")
+          const prodRouteDir = path.resolve(prodRoutesDir, relDir)
+
+          const mapped: any = {
+            ...item,
+            routeDir: prodRouteDir
+          }
+
+          if (item.pageHtml) {
+            const relHtml = path.relative(origRoutesDir, item.pageHtml)
+            mapped.pageHtml = path.resolve(prodRoutesDir, relHtml)
+          } else {
+            delete mapped.pageHtml
+          }
+
+          return mapped
+        })
+      }
     }
   }
 
@@ -101,7 +132,7 @@ export function createBoronixApp(options: BoronixAppOptions): { fetch(req: Reque
               kind = "miss"
               response = handleNotFoundResponse(req, url, manifest, options)
             } else {
-              response = await handleApi(req, url, manifest, session, auth, flash, requestId)
+              response = await handleApi(req, url, manifest, session, auth, flash, options.root, requestId)
             }
           } else {
             const matched = matchRoute(manifest, url.pathname, "page")
@@ -185,7 +216,7 @@ function determineErrorPhase(err: any, kind: string): BoronixErrorPhase {
   return "unknown"
 }
 
-async function handleApi(req: Request, url: URL, manifest: RouteManifest, session: Session, auth: Auth, flash: Flash, requestId?: string): Promise<Response> {
+async function handleApi(req: Request, url: URL, manifest: RouteManifest, session: Session, auth: Auth, flash: Flash, root?: string, requestId?: string): Promise<Response> {
   const match = matchRoute(manifest, url.pathname, "api")
   if (!match?.item.apiModule) {
     return notFound()
@@ -193,7 +224,7 @@ async function handleApi(req: Request, url: URL, manifest: RouteManifest, sessio
 
   let module
   try {
-    module = await importFresh(match.item.apiModule)
+    module = await importFresh(match.item.apiModule, root)
   } catch (err: any) {
     err.phase = "api"
     throw err
@@ -310,7 +341,7 @@ async function handleAction(
 
   let module
   try {
-    module = await importFresh(match.item.actionsModule)
+    module = await importFresh(match.item.actionsModule, options.root)
   } catch (err: any) {
     err.phase = "action"
     throw err
@@ -403,7 +434,7 @@ async function renderPage(
   if (match.item.pageModule) {
     let module
     try {
-      module = await importFresh(match.item.pageModule)
+      module = await importFresh(match.item.pageModule, options.root)
     } catch (err: any) {
       err.phase = "page-loader"
       throw err
@@ -466,8 +497,19 @@ async function renderPage(
   return htmlResponse(html, { status })
 }
 
-async function importFresh(filePath: string): Promise<Record<string, unknown>> {
-  return import(pathToFileURL(filePath).href) as Promise<Record<string, unknown>>
+async function importFresh(filePath: string, root?: string): Promise<Record<string, unknown>> {
+  const globalModules = (globalThis as any).boronixCompiledModules
+  if (globalModules) {
+    const relPath = root ? path.relative(root, filePath).replace(/\\/g, "/") : filePath
+    if (globalModules[relPath] !== undefined) {
+      return globalModules[relPath]
+    }
+    if (globalModules[filePath] !== undefined) {
+      return globalModules[filePath]
+    }
+  }
+  const fileUrl = decodeURI(pathToFileURL(filePath).href)
+  return import(fileUrl) as Promise<Record<string, unknown>>
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

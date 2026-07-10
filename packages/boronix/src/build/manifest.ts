@@ -49,7 +49,7 @@ export function readBuildManifest(root: string): BoronixBuildManifest {
   }
 }
 
-export function validateBuildManifest(manifest: any, startRuntime: "bun" | "node"): void {
+export function validateBuildManifest(manifest: any, startRuntime: "bun" | "node", root?: string): void {
   if (!manifest || typeof manifest !== "object") {
     throw new BoronixUserError("Build manifest is invalid or corrupt.", {
       code: "KQ_BUILD_MANIFEST_INVALID"
@@ -92,7 +92,13 @@ export function validateBuildManifest(manifest: any, startRuntime: "bun" | "node
 
   // Check if serverEntry exists if requested
   if (manifest.output && manifest.output.serverEntry) {
-    const entryPath = manifest.output.serverEntry
+    let entryPath: string
+    if (root && (root.endsWith(".boronix.tmp") || root.endsWith(".boronix.tmp/"))) {
+      entryPath = path.resolve(root, "server/entry.js")
+    } else {
+      entryPath = path.resolve(root ?? ".", manifest.output.serverEntry)
+    }
+
     if (!fs.existsSync(entryPath)) {
       throw new BoronixUserError(`Server entry file not found at: ${entryPath}`, {
         code: "KQ_BUILD_ENTRY_NOT_FOUND",

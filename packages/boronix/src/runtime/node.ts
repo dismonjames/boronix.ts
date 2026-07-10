@@ -55,6 +55,6 @@ export async function writeWebResponse(response: Response, res: ServerResponse):
     return
   }
 
-  const body = Buffer.from(await response.arrayBuffer())
-  res.end(body)
+  const readable = Readable.fromWeb(response.body as any)
+  readable.pipe(res)
 }

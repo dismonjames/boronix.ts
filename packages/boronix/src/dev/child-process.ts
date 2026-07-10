@@ -45,24 +45,61 @@ function resolveNodeExecutable(): string {
   return executable
 }
 
+function resolveBunExecutable(): string {
+  const executable = process.env.BORONIX_BUN_EXECUTABLE || "bun"
+  const probe = spawnSync(executable, ["--version"], { stdio: "ignore" })
+  if (probe.error || probe.status !== 0) {
+    throw new BoronixUserError("Bun is required for runtime \"bun\".\nInstall Bun or use runtime \"node\".", {
+      code: "KQ_BUN_RUNTIME_NOT_FOUND",
+      hint: "Install Bun or run using --runtime node."
+    })
+  }
+  return executable
+}
+
 function assertProjectTsx(root: string): void {
   try {
-    const projectRequire = createRequire(path.join(root, "package.json"))
-    projectRequire.resolve("tsx/package.json")
+    const selfRequire = createRequire(import.meta.url)
+    selfRequire.resolve("tsx/package.json")
   } catch {
-    throw new BoronixUserError("The Node development runtime requires \"tsx\" to execute TypeScript.", {
-      code: "KQ_NODE_TS_RUNTIME_MISSING",
-      hint: "Install it with:\n\nnpm install --save-dev tsx"
-    })
+    try {
+      const projectRequire = createRequire(path.join(root, "package.json"))
+      projectRequire.resolve("tsx/package.json")
+    } catch {
+      throw new BoronixUserError("The Node development runtime requires \"tsx\" to execute TypeScript.", {
+        code: "KQ_NODE_TS_RUNTIME_MISSING",
+        hint: "Install it with:\n\nnpm install --save-dev tsx"
+      })
+    }
   }
 }
 
 export function spawnDevChild(options: DevChildOptions): DevChild {
   const isNode = options.runtime === "node"
   if (isNode) assertProjectTsx(options.root)
-  const command = isNode ? resolveNodeExecutable() : process.execPath
+  const command = isNode ? resolveNodeExecutable() : resolveBunExecutable()
+
+  let nodeArgs: string[] = []
+  if (isNode) {
+    let loaderPath = "tsx"
+    try {
+      loaderPath = import.meta.resolve("tsx")
+    } catch {
+      try {
+        const selfRequire = createRequire(import.meta.url)
+        loaderPath = selfRequire.resolve("tsx")
+      } catch {
+        try {
+          const projectRequire = createRequire(path.join(options.root, "package.json"))
+          loaderPath = projectRequire.resolve("tsx")
+        } catch {}
+      }
+    }
+    nodeArgs.push(`--import=${loaderPath}`)
+  }
+
   const args = [
-    ...(isNode ? ["--import=tsx"] : []),
+    ...nodeArgs,
     workerEntry(), "--root", options.root, "--runtime", options.runtime, "--revision", String(options.revision)
   ]
   if (options.port !== undefined) args.push("--port", String(options.port))

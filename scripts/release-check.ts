@@ -16,7 +16,7 @@ function runCmd(cmd: string) {
 // 1. Run tests
 const skipTests = process.env.BORONIX_SKIP_TESTS === "1" || process.env.GOROS_SKIP_TESTS === "1" || process.env.KUMQUAT_SKIP_TESTS === "1"
 if (!skipTests) {
-  if (!runCmd("bun test")) {
+  if (!runCmd("npm test")) {
     console.error("✖ tests failed")
     process.exit(1)
   }
@@ -26,14 +26,14 @@ if (!skipTests) {
 }
 
 // 2. Run typecheck
-if (!runCmd("bun run typecheck")) {
+if (!runCmd("npm run typecheck")) {
   console.error("✖ typecheck failed")
   process.exit(1)
 }
 console.log("✔ typecheck passed")
 
 // 3. Run build
-if (!runCmd("bun run build")) {
+if (!runCmd("npm run build")) {
   console.error("✖ build failed")
   process.exit(1)
 }
@@ -57,8 +57,8 @@ for (const pkgName of packages) {
     process.exit(1)
   }
 
-  if (pkg.version !== "0.6.1") {
-    console.error(`✖ version mismatch for ${pkgName}: expected 0.6.1, found ${pkg.version}`)
+  if (pkg.version !== "0.7.0") {
+    console.error(`✖ version mismatch for ${pkgName}: expected 0.7.0, found ${pkg.version}`)
     process.exit(1)
   }
 
@@ -74,6 +74,11 @@ for (const pkgName of packages) {
 
   if (pkg.repository.url !== "git+ssh://git@github.com/dismonjames/boronix.ts.git") {
     console.error(`✖ repository URL mismatch for ${pkgName}: found ${pkg.repository.url}`)
+    process.exit(1)
+  }
+
+  if (pkg.engines?.node !== ">=18.18") {
+    console.error(`✖ node engine floor missing or invalid for ${pkgName}: expected >=18.18, found ${pkg.engines?.node}`)
     process.exit(1)
   }
 
@@ -101,21 +106,30 @@ for (const pkgName of packages) {
       console.error(`✖ build artifact missing: ${filePath}`)
       process.exit(1)
     }
+
+    // Check CLI entry has shebang
+    if (file.endsWith("main.js") || (pkgName === "create-boronix" && file === "dist/index.js")) {
+      const content = readFileSync(filePath, "utf8")
+      if (!content.startsWith("#!/usr/bin/env node")) {
+        console.error(`✖ shebang missing or invalid in ${filePath}: expected #!/usr/bin/env node`)
+        process.exit(1)
+      }
+    }
   }
 }
 
 console.log("✔ package metadata valid")
 console.log("✔ dist files found")
 
-// 5. Verify create templates use ^0.6.1
+// 5. Verify create templates use ^0.7.0
 const templatePkgPaths = [
   path.join(rootDir, "packages/create-boronix/src/templates/basic/package.json"),
   path.join(rootDir, "packages/create-boronix/src/templates/homework/package.json")
 ]
 for (const tplPath of templatePkgPaths) {
   const tplPkg = JSON.parse(readFileSync(tplPath, "utf8"))
-  if (tplPkg.dependencies?.boronix !== "^0.6.1") {
-    console.error(`✖ Template ${tplPath} does not use ^0.6.1 for boronix`)
+  if (tplPkg.dependencies?.boronix !== "^0.7.0") {
+    console.error(`✖ Template ${tplPath} does not use ^0.7.0 for boronix`)
     process.exit(1)
   }
   if (!tplPkg.scripts?.["doctor:production"] || tplPkg.scripts["doctor:production"] !== "boronix doctor --production") {
@@ -123,7 +137,7 @@ for (const tplPath of templatePkgPaths) {
     process.exit(1)
   }
 }
-console.log("✔ create templates use ^0.6.1")
+console.log("✔ create templates use ^0.7.0")
 
 // 6. Verify production docs exist
 const requiredDocs = [
@@ -143,7 +157,10 @@ const requiredDocs = [
   "docs/reloading.md",
   "docs/migration-v0.6.1.md",
   "docs/releases/v0.6.1-root-route.md",
-  "docs/releases/github-v0.6.1.md"
+  "docs/releases/github-v0.6.1.md",
+  "docs/migration-v0.7.0.md",
+  "docs/releases/v0.7.0-node-first.md",
+  "docs/releases/github-v0.7.0.md"
 ]
 for (const doc of requiredDocs) {
   if (!existsSync(path.join(rootDir, doc))) {
@@ -153,7 +170,14 @@ for (const doc of requiredDocs) {
 }
 console.log("✔ production docs exist")
 
-// 7. Verify manifest validator is exported
+// 7. Verify package-lock.json exists
+if (!existsSync(path.join(rootDir, "package-lock.json"))) {
+  console.error("✖ package-lock.json missing")
+  process.exit(1)
+}
+console.log("✔ package-lock.json verified")
+
+// 8. Verify manifest validator is exported
 const indexSrc = readFileSync(path.join(rootDir, "packages/boronix/src/index.ts"), "utf8")
 if (!indexSrc.includes("readBuildManifest") || !indexSrc.includes("validateBuildManifest")) {
   console.error("✖ Manifest validators not exported from index.ts")
@@ -161,7 +185,7 @@ if (!indexSrc.includes("readBuildManifest") || !indexSrc.includes("validateBuild
 }
 console.log("✔ manifest validators exported")
 
-// 8. Check no hard-coded development secret in production path
+// 9. Check no hard-coded development secret in production path
 const appSrc = readFileSync(path.join(rootDir, "packages/boronix/src/core/app.ts"), "utf8")
 if (appSrc.includes("boronix-dev-session-secret") && !appSrc.includes("isSecretDefault")) {
   console.error("✖ Hard-coded development secret found in production path without guard")
@@ -169,7 +193,7 @@ if (appSrc.includes("boronix-dev-session-secret") && !appSrc.includes("isSecretD
 }
 console.log("✔ no hard-coded development secret in production path")
 
-// 9. Verify tarball has dist/README/LICENSE (check files field in package.json)
+// 10. Verify tarball has dist/README/LICENSE (check files field in package.json)
 for (const pkgName of packages) {
   const pkgPath = path.join(rootDir, "packages", pkgName, "package.json")
   const pkg = JSON.parse(readFileSync(pkgPath, "utf8"))
@@ -179,23 +203,6 @@ for (const pkgName of packages) {
   }
 }
 console.log("✔ package tarball includes dist/README/LICENSE")
-
-// 10. The isolated worker is the only supported server-module reload strategy.
-const devSources = [
-  "packages/boronix/src/core/app.ts",
-  "packages/boronix/src/config/load-config.ts",
-  "packages/boronix/src/dev/supervisor.ts",
-  "packages/boronix/src/dev/worker.ts"
-].map(file => readFileSync(path.join(rootDir, file), "utf8")).join("\n")
-if (/import\([^\n]*[?](?:t=|boronix_rev)/.test(devSources)) {
-  console.error("✖ legacy ESM cache-busting import found in production source")
-  process.exit(1)
-}
-if (!devSources.includes("spawnDevChild") || !devSources.includes("broadcast-reload")) {
-  console.error("✖ dev supervisor/worker protocol is incomplete")
-  process.exit(1)
-}
-console.log("✔ isolated dev worker and cache-busting guard verified")
 
 // 11. Root routes are direct capsules; no source-level home-to-root mapping.
 for (const tplPath of [

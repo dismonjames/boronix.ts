@@ -39,13 +39,14 @@ test("create-boronix --db sqlite creates Drizzle SQLite files and scripts", () =
     expect(existsSync(path.join(appPath, "app/db/client.ts"))).toBe(true)
     expect(existsSync(path.join(appPath, "app/db/seed.ts"))).toBe(true)
     expect(existsSync(path.join(appPath, "drizzle.config.ts"))).toBe(true)
-    expect(readFileSync(path.join(appPath, ".env.example"), "utf8")).toContain("DATABASE_URL=./local.db")
+    expect(readFileSync(path.join(appPath, ".env.example"), "utf8")).toContain("DATABASE_URL=file:local.db")
 
     const pkg = JSON.parse(readFileSync(path.join(appPath, "package.json"), "utf8"))
-    expect(pkg.dependencies.boronix).toBe("^0.6.1")
+    expect(pkg.dependencies.boronix).toBe("^0.7.0")
     expect(pkg.dependencies["drizzle-orm"]).toBe("latest")
     expect(pkg.devDependencies["drizzle-kit"]).toBe("latest")
-    expect(pkg.devDependencies["@types/bun"]).toBe("latest")
+    const typesProp = pkg.devDependencies["@types/bun"] || pkg.devDependencies["@types/node"]
+    expect(typesProp).toBe("latest")
     expect(pkg.scripts["db:push"]).toBe("boronix db push")
   } finally {
     rmSync(tempDir, { recursive: true, force: true })
@@ -91,7 +92,7 @@ test("create-boronix rejects invalid --db", () => {
   }
 })
 
-test("create-boronix rejects sqlite with node runtime", () => {
+test("create-boronix allows sqlite with node runtime", () => {
   const tempDir = path.join(os.tmpdir(), `boronix-db-template-sqlite-node-${Date.now()}`)
   const appPath = path.join(tempDir, "my-app")
 
@@ -101,11 +102,10 @@ test("create-boronix rejects sqlite with node runtime", () => {
       stderr: "pipe",
       stdout: "pipe"
     })
-    const stderr = new TextDecoder().decode(result.stderr)
-    expect(result.exitCode).toBe(1)
-    expect(stderr).toContain("KQ_CREATE_DB_RUNTIME_UNSUPPORTED")
-    expect(stderr).toContain('--db sqlite requires runtime "bun"')
-    expect(existsSync(appPath)).toBe(false)
+    expect(result.exitCode).toBe(0)
+    expect(existsSync(path.join(appPath, "app/db/client.ts"))).toBe(true)
+    const clientContent = readFileSync(path.join(appPath, "app/db/client.ts"), "utf8")
+    expect(clientContent).toContain("@libsql/client")
   } finally {
     rmSync(tempDir, { recursive: true, force: true })
   }

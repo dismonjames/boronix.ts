@@ -17,7 +17,11 @@ export async function loadConfig(root: string): Promise<ResolvedBoronixConfig> {
     }
   }
 
-  if (existsSync(configPath)) {
+  const globalModules = (globalThis as any).boronixCompiledModules
+  if (globalModules && globalModules.config !== undefined) {
+    const module = globalModules.config
+    userConfig = module.default ?? module ?? {}
+  } else if (existsSync(configPath)) {
     // Development config changes restart the isolated dev worker. A normal import
     // is therefore sufficient and deliberately avoids process-local cache tricks.
     const module = await import(pathToFileURL(configPath).href)

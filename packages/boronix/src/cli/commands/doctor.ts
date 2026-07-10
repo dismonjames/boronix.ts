@@ -237,18 +237,23 @@ export async function doctorCommand(
 
   // --- Category: runtime (legacy) ---
   if (!isProductionMode) {
-    const bunAvailable = hasBinary("bun")
+    const nodeVersion = process.versions.node
+    const [majorStr, minorStr] = nodeVersion.split(".")
+    const major = parseInt(majorStr || "0", 10)
+    const minor = parseInt(minorStr || "0", 10)
+    const nodeSupported = major > 18 || (major === 18 && minor >= 18)
+
     runtimeChecks.push({
-      label: "bun available",
-      status: bunAvailable ? "success" : "warning",
-      hint: !bunAvailable ? "Install Bun runtime for maximum performance." : undefined
+      label: `node  >=18.18`,
+      status: nodeSupported ? "success" : "error",
+      hint: !nodeSupported ? `Boronix requires Node.js 18.18 or newer. Current version: ${nodeVersion}` : undefined
     })
 
-    const nodeAvailable = hasBinary("node")
+    const bunAvailable = hasBinary("bun")
     runtimeChecks.push({
-      label: "node available",
-      status: nodeAvailable ? "success" : "warning",
-      hint: !nodeAvailable ? "Install Node.js runtime fallback." : undefined
+      label: "bun available (optional)",
+      status: bunAvailable ? "success" : "warning",
+      hint: !bunAvailable ? "Install Bun runtime if you want to use --runtime bun." : undefined
     })
 
     if (config) {
@@ -286,7 +291,7 @@ export async function doctorCommand(
 
     try {
       manifestData = readBuildManifest(root)
-      validateBuildManifest(manifestData, config ? config.runtime : "bun")
+      validateBuildManifest(manifestData, config ? config.runtime : "bun", root)
       manifestLoaded = true
     } catch (err: any) {
       manifestError = err

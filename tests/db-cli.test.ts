@@ -117,7 +117,7 @@ test("db seed runs app/db/seed.ts", () => {
   const tempDir = path.join(os.tmpdir(), `boronix-db-cli-seed-${Date.now()}`)
   mkdirSync(path.join(tempDir, "app/db"), { recursive: true })
   writeFileSync(path.join(tempDir, "drizzle.config.ts"), "export default {}\n", "utf8")
-  writeFileSync(path.join(tempDir, "app/db/seed.ts"), "await Bun.write('seed-ran.txt', 'ok')\n", "utf8")
+  writeFileSync(path.join(tempDir, "app/db/seed.ts"), "import fs from 'node:fs'; fs.writeFileSync('seed-ran.txt', 'ok')\n", "utf8")
 
   try {
     const result = Bun.spawnSync({

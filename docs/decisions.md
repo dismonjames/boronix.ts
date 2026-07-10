@@ -133,3 +133,24 @@ This document outlines design and rebranding decisions made during version `v0.2
 - The root page is the route capsule directly at `app/routes/page.html`, with an optional `app/routes/page.ts` loader.
 - Route paths are calculated only from the directory relative to `app/routes`: an empty relative directory is `/`, and `home` is `/home`.
 - The former `home → /` compatibility mapping was removed rather than silently retained. `boronix doctor` warns with `KQ_LEGACY_HOME_ROUTE` when it finds the legacy shape without a direct root page.
+
+## v0.7.0 Decisions
+
+### 1. Node-first Runtime Default
+- Made Node.js the primary and default runtime for development, build, and start commands.
+- Bun remains as an optional compatibility runtime explicitly enabled via `--runtime bun` or `runtime: "bun"` in configuration.
+- Minimum Node version is enforced at >= 18.18.
+
+### 2. Standalone Production Build with Registry Injection
+- `boronix build` generates a self-contained ESM javascript bundle `.boronix/server/entry.js` compiling all user routes and configuration.
+- The build copies templates (HTML files) and public assets into `.boronix/templates` and `.boronix/public` respectively.
+- At start time, `.boronix/server/entry.js` is imported, registering all compiled TypeScript modules into `globalThis.boronixCompiledModules` registry.
+- `importFresh` and config loading retrieve modules from the global registry rather than dynamically reading source `.ts` files, enabling the app to run in complete isolation from the original `app/` source directory.
+
+### 3. LibSQL SQLite Driver
+- Migrated the SQLite template from Bun's native `bun:sqlite` to the cross-platform `@libsql/client` (LibSQL) and `drizzle-orm/libsql`.
+- Enabled SQLite support on Node.js and Bun runtime under a unified database driver codebase.
+
+### 4. Chokidar File Watcher
+- Replaced Node's native recursive watch with `chokidar` for cross-platform file watching in the dev supervisor.
+
