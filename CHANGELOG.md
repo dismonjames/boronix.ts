@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.4.3 - Runtime Error Overlay Fix
+
+- Routed development runtime errors through the polished Boronix dev overlay.
+- Added coverage to ensure thrown page errors render the refined overlay HTML.
+
 ## v0.4.2 - SQLite Runtime Guard
 
 - Rejected `create-boronix --db sqlite --runtime node` with a clear runtime support error.
