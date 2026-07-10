@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.3.0 - Developer Experience Core
+
+- Added rich, visual Dev Error Page HTML rendering for development mode.
+- Tagged and determined error phases (config, middleware, layout, page-loader, page-render, api, action, static, router, unknown).
+- Implemented robust stack trace cleaning (hiding internal packages/node_modules frames, prioritizing user code).
+- Integrated exact column caret pointing and source file code frame rendering in errors.
+- Added file convention routes: `app/not-found.html` and `app/error.html` for local and global error boundary resolution.
+- Redefined `notFound()` to render HTML boundaries on page requests, returning JSON on API requests.
+- Upgraded `boronix inspect` to support action URL parsing, `--method`, and `--json` parseable output.
+- Enhanced Form/Action DX with precise mismatch, shape, wrapping, and return type error diagnostics.
+- Redesigned typegen (`boronix typegen`) to produce `.boronix/types/routes.d.ts` featuring `BoronixRoute` union, `BoronixRouteParams`, and `RouteParams` mapping.
+- Updated templates to include global `error.html` and `not-found.html` configurations.
+
 ## v0.2.7 - CI Publish Workflow
 
 - Added GitHub Actions publish workflow triggered on version tags.

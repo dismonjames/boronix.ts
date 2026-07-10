@@ -53,6 +53,13 @@ test("typegen command generates route types file", () => {
     // Action routes
     expect(content).toContain('export type ActionRoute =')
     expect(content).toContain('"/login?/login"')
+
+    // BoronixRoute & BoronixRouteParams
+    expect(content).toContain('export type BoronixRoute =')
+    expect(content).toContain('"/exercises/[id]"')
+    expect(content).toContain('export type BoronixRouteParams =')
+    expect(content).toContain('id: string')
+    expect(content).toContain('export type RouteParams<T extends BoronixRoute>')
   } finally {
     rmSync(tempDir, { recursive: true, force: true })
   }

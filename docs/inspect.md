@@ -8,37 +8,73 @@ The `inspect` command resolves a specific request URL route, extracting matched 
 boronix inspect <pathname> [options]
 ```
 
-## Example Output
+## Options
 
-### Matching Dynamic Route
+- `--method <verb>`: Inspect with a specific HTTP method (e.g. POST, GET).
+- `--json`: Output only raw parseable JSON representing the matched route details.
+- `--plain`: Disable colors and Unicode symbols.
+- `--no-color`: Disable terminal colors.
 
+## Examples
+
+### Matching an Action
+```bash
+boronix inspect "/login?/login"
+```
+Outputs:
 ```txt
 ◆ Boronix inspect
 
-  ◆ /exercises/12
+  ◆ /login?/login
   │
   ├─ matched
-  │  └─ /exercises/:id
+  │  └─ /login
   │
-  ├─ params
-  │  └─ id  12
+  ├─ request
+  │  ├─ method  POST
+  │  └─ kind    action
   │
-  └─ files
-     ├─ page     app/routes/exercises/[id]/page.html
-     ├─ loader   app/routes/exercises/[id]/page.ts
-     ├─ actions  app/routes/exercises/[id]/actions.ts
-     └─ layout   app/layout.html
+  ├─ action
+  │  ├─ name    login
+  │  └─ file    app/routes/login/actions.ts
+  │
+  ├─ files
+  │  ├─ page    app/routes/login/page.html
+  │  ├─ loader  app/routes/login/page.ts
+  │  └─ action  app/routes/login/actions.ts
+  │
+  └─ layouts
+     └─ app/layout.html
 
 ✔ route resolved
 ```
 
-### Non-matching Route
-
-```txt
-✖ Boronix error KQ_ROUTE_NOT_FOUND
-
-No route matched `/missing`.
-
-Hint:
-  Run `boronix routes` to see available routes.
+### JSON Mode
+```bash
+boronix inspect /login --json
 ```
+Outputs:
+```json
+{
+  "success": true,
+  "routePath": "/login",
+  "matched": "/login",
+  "request": {
+    "method": "GET",
+    "kind": "page"
+  },
+  "files": {
+    "page": "app/routes/login/page.html",
+    "loader": "app/routes/login/page.ts"
+  },
+  "layouts": [
+    "app/layout.html"
+  ]
+}
+```
+
+## Error Diagnostics
+If the route, action, or API does not exist, `boronix inspect` exits with code `1` and prints the error code:
+- `KQ_ROUTE_NOT_FOUND`
+- `KQ_ACTION_NOT_FOUND`
+- `KQ_API_NOT_FOUND`

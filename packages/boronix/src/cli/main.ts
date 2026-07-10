@@ -139,7 +139,9 @@ async function main(argv: string[]): Promise<void> {
     const routePath = parsed.positionals[0] ?? ""
     await inspectCommand(parsed.root, routePath, {
       plain: parsed.plain,
-      noColor: parsed.noColor
+      noColor: parsed.noColor,
+      json: parsed.json,
+      method: parsed.method
     })
     return
   }

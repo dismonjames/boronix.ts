@@ -125,14 +125,15 @@ async function run() {
       "dev": "boronix dev",
       "build": "boronix build",
       "start": "boronix start",
-      "doctor": "boronix doctor"
+      "doctor": "boronix doctor",
+      "typegen": "boronix typegen"
     }
 
-    // Set boronix version to ^0.2.7
+    // Set boronix version to ^0.3.0
     if (pkg.dependencies) {
       if (pkg.dependencies.boronix) delete pkg.dependencies.boronix
       if (pkg.dependencies["@boronix-ts/boronix"]) delete pkg.dependencies["@boronix-ts/boronix"]
-      pkg.dependencies["boronix"] = "^0.2.7"
+      pkg.dependencies["boronix"] = "^0.3.0"
     }
 
     writeFileSync(pkgPath, JSON.stringify(pkg, null, 2), "utf8")

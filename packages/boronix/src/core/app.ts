@@ -1,19 +1,21 @@
+import { existsSync, readFileSync } from "node:fs"
 import { pathToFileURL } from "node:url"
 import path from "node:path"
-import { BoronixUserError } from "./errors"
+import { BoronixUserError, diagnoseError, type BoronixErrorPhase, type BoronixDiagnostic } from "./errors"
 import { createBodyReader, readFormData } from "./request"
-import { htmlResponse, isFailResult, notFound } from "./response"
+import { htmlResponse, isFailResult, notFound, json } from "./response"
 import { matchRoute } from "./router"
 import { createAuth, type Auth } from "./auth"
 import { createFlash, type Flash } from "./flash"
 import { commitSession, createSession, type Session } from "./session"
 import { createActionForm } from "../route/action"
-import { renderPageView } from "../render/view"
-import type { RouteManifest } from "../scanner/route-manifest"
+import { renderPageView, collectLayouts } from "../render/view"
+import type { RouteManifest, RouteManifestItem } from "../scanner/route-manifest"
 import { scanRoutes } from "../scanner/scan-routes"
 import { servePublic } from "../static/serve-public"
 import { resolvePath } from "../utils/path"
 import type { ResolvedBoronixConfig } from "../config/types"
+import { renderTemplate } from "../render/template"
 
 import { logRequest, isStaticAsset } from "../cli/ui/activity"
 
@@ -34,7 +36,13 @@ export function createBoronixApp(options: BoronixAppOptions): { fetch(req: Reque
       const session = createSession(req, options.config.session)
       const auth = createAuth(session)
       const flash = createFlash(session)
-      const manifest = options.dev ? scanRoutes(resolvePath(options.root, options.config.app.routesDir)) : options.manifest ?? []
+      
+      let manifest: RouteManifest
+      try {
+        manifest = options.dev ? scanRoutes(resolvePath(options.root, options.config.app.routesDir)) : options.manifest ?? []
+      } catch (err: any) {
+        return handleDevOrErrorPageResponse(err, "config", req, url, [], options)
+      }
 
       const startTime = performance.now()
       let status = 200
@@ -53,20 +61,23 @@ export function createBoronixApp(options: BoronixAppOptions): { fetch(req: Reque
             const matched = matchRoute(manifest, url.pathname, "api")
             if (!matched) {
               kind = "miss"
+              response = handleNotFoundResponse(req, url, manifest, options)
+            } else {
+              response = await handleApi(req, url, manifest, session, auth, flash)
             }
-            response = await handleApi(req, url, manifest, session, auth, flash)
           } else {
             const matched = matchRoute(manifest, url.pathname, "page")
             if (!matched) {
               kind = "miss"
+              response = handleNotFoundResponse(req, url, manifest, options)
             } else {
               if (req.method === "POST" && url.search.startsWith("?/")) {
                 kind = "action"
               } else {
                 kind = matched.item.pageModule ? "render" : "serve"
               }
+              response = await handlePage(req, url, manifest, options, session, auth, flash)
             }
-            response = await handlePage(req, url, manifest, options, session, auth, flash)
           }
         }
 
@@ -84,10 +95,22 @@ export function createBoronixApp(options: BoronixAppOptions): { fetch(req: Reque
         const finalResponse = commitSession(response, session)
         return finalResponse
       } catch (err: any) {
-        status = 500
-        kind = "error"
-        extra = err.message || ""
-        throw err
+        status = err.status || 500
+        if (err instanceof Response) {
+          status = err.status
+        }
+        
+        if (kind === "serve") {
+          kind = "error"
+        }
+        
+        extra = err.code || err.message || ""
+
+        const matched = matchRoute(manifest, url.pathname, "page") || matchRoute(manifest, url.pathname, "api")
+        const phase = determineErrorPhase(err, kind)
+        
+        const errorResponse = handleDevOrErrorPageResponse(err, phase, req, url, manifest, options, matched?.item)
+        return commitSession(errorResponse, session)
       } finally {
         const duration = Math.round(performance.now() - startTime)
         const configLog = options.config.cli.requestLog
@@ -111,29 +134,60 @@ export function createBoronixApp(options: BoronixAppOptions): { fetch(req: Reque
   }
 }
 
+function determineErrorPhase(err: any, kind: string): BoronixErrorPhase {
+  if (err?.phase) return err.phase
+  if (kind === "action") return "action"
+  if (kind === "api") return "api"
+  if (kind === "render") return "page-render"
+  return "unknown"
+}
+
 async function handleApi(req: Request, url: URL, manifest: RouteManifest, session: Session, auth: Auth, flash: Flash): Promise<Response> {
   const match = matchRoute(manifest, url.pathname, "api")
   if (!match?.item.apiModule) {
     return notFound()
   }
 
-  const module = await importFresh(match.item.apiModule)
+  let module
+  try {
+    module = await importFresh(match.item.apiModule)
+  } catch (err: any) {
+    err.phase = "api"
+    throw err
+  }
+  
   const handler = module[req.method]
 
   if (typeof handler !== "function") {
     return new Response("Method Not Allowed", { status: 405 })
   }
 
-  return handler({
-    req,
-    url,
-    params: match.params,
-    query: url.searchParams,
-    session,
-    auth,
-    flash,
-    body: createBodyReader(req)
-  })
+  try {
+    const result = await handler({
+      req,
+      url,
+      params: match.params,
+      query: url.searchParams,
+      session,
+      auth,
+      flash,
+      body: createBodyReader(req)
+    })
+    
+    if (result instanceof Response) {
+      if (result.status === 404) {
+        return json({ error: "Not Found", message: "Resource not found" }, { status: 404 })
+      }
+      return result
+    }
+    return result
+  } catch (err: any) {
+    if (err instanceof Response && err.status === 404) {
+      return json({ error: "Not Found", message: "Resource not found" }, { status: 404 })
+    }
+    err.phase = "api"
+    throw err
+  }
 }
 
 async function handlePage(
@@ -147,18 +201,33 @@ async function handlePage(
 ): Promise<Response> {
   const match = matchRoute(manifest, url.pathname, "page")
   if (!match?.item.pageHtml) {
-    return notFound()
+    return handleNotFoundResponse(req, url, manifest, options)
   }
 
-  if (req.method === "POST" && url.search.startsWith("?/")) {
-    return handleAction(req, url, match, options, session, auth, flash)
-  }
+  try {
+    if (req.method === "POST" && url.search.startsWith("?/")) {
+      const response = await handleAction(req, url, match, options, session, auth, flash)
+      if (response instanceof Response && response.status === 404) {
+        return handleNotFoundResponse(req, url, manifest, options, match.item.routeDir)
+      }
+      return response
+    }
 
-  if (req.method !== "GET" && req.method !== "HEAD") {
-    return new Response("Method Not Allowed", { status: 405 })
-  }
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      return new Response("Method Not Allowed", { status: 405 })
+    }
 
-  return renderPage(req, url, match, options, session, auth, flash)
+    const response = await renderPage(req, url, match, options, session, auth, flash)
+    if (response instanceof Response && response.status === 404) {
+      return handleNotFoundResponse(req, url, manifest, options, match.item.routeDir)
+    }
+    return response
+  } catch (err: any) {
+    if (err instanceof Response && err.status === 404) {
+      return handleNotFoundResponse(req, url, manifest, options, match.item.routeDir)
+    }
+    throw err
+  }
 }
 
 async function handleAction(
@@ -170,36 +239,98 @@ async function handleAction(
   auth: Auth,
   flash: Flash
 ): Promise<Response> {
-  const actionName = decodeURIComponent(url.search.slice(2))
-
-  if (!actionName || !match.item.actionsModule) {
-    return notFound()
+  if (req.method !== "POST") {
+    throw new BoronixUserError(`Actions must be requested using POST method. Found: ${req.method}`, {
+      code: "KQ_INVALID_ACTION_METHOD",
+      hint: "Change the form method to POST."
+    })
   }
 
-  const module = await importFresh(match.item.actionsModule)
+  const actionName = decodeURIComponent(url.search.slice(2))
+
+  if (!actionName) {
+    throw new BoronixUserError("Form action name is missing.", {
+      code: "KQ_ACTION_NOT_FOUND",
+      hint: 'Specify action name like action="?/login"'
+    })
+  }
+
+  if (!match.item.actionsModule) {
+    throw new BoronixUserError(`Action "${actionName}" was not found for route "${match.item.routePath}".`, {
+      code: "KQ_ACTION_NOT_FOUND",
+      hint: "Ensure actions.ts exists and exports the action function."
+    })
+  }
+
+  let module
+  try {
+    module = await importFresh(match.item.actionsModule)
+  } catch (err: any) {
+    err.phase = "action"
+    throw err
+  }
+
   const handler = module[actionName]
 
-  if (typeof handler !== "function") {
+  if (handler !== undefined && typeof handler !== "function") {
+    throw new BoronixUserError(`Action \`${actionName}\` is not a function.`, {
+      code: "KQ_ACTION_INVALID_SHAPE",
+      file: path.relative(options.root, match.item.actionsModule),
+      hint: `Ensure \`${actionName}\` is wrapped in the \`action()\` helper.`
+    })
+  }
+
+  if (typeof handler === "function" && !(handler as any)._isBoronixAction) {
+    throw new BoronixUserError(`Action \`${actionName}\` was not wrapped in \`action()\` helper.`, {
+      code: "KQ_ACTION_NOT_WRAPPED",
+      file: path.relative(options.root, match.item.actionsModule),
+      hint: `Wrap the handler like: export const ${actionName} = action(async () => { ... })`
+    })
+  }
+
+  if (!handler) {
     const foundActions = Object.keys(module).filter(k => k !== "default" && typeof module[k] === "function")
-    throw new BoronixUserError(`Action \`${actionName}\` was not found.`, {
+    throw new BoronixUserError(`Action "${actionName}" was not found for route "${match.item.routePath}".`, {
       code: "KQ_ACTION_NOT_FOUND",
       file: path.relative(options.root, match.item.actionsModule),
-      expected: `export const ${actionName} = action(...)`,
+      expected: `export const ${actionName} = action(async () => {\n  ...\n})`,
       found: foundActions.length > 0 ? foundActions.join(", ") : "none",
       hint: "Rename the export or update the form action."
     })
   }
 
-  const result = await handler({
-    req,
-    url,
-    params: match.params,
-    query: url.searchParams,
-    session,
-    auth,
-    flash,
-    form: createActionForm(await readFormData(req))
-  })
+  let result
+  try {
+    result = await handler({
+      req,
+      url,
+      params: match.params,
+      query: url.searchParams,
+      session,
+      auth,
+      flash,
+      form: createActionForm(await readFormData(req))
+    })
+  } catch (err: any) {
+    err.phase = "action"
+    throw err
+  }
+
+  if (result === undefined || (typeof result !== "object" && !(result instanceof Response))) {
+    throw new BoronixUserError(`Action \`${actionName}\` returned an invalid type.`, {
+      code: "KQ_ACTION_INVALID_RETURN",
+      file: path.relative(options.root, match.item.actionsModule),
+      hint: "Action must return a Response or a fail() helper result."
+    })
+  }
+
+  if (result !== null && typeof result === "object" && !isFailResult(result) && !(result instanceof Response)) {
+    throw new BoronixUserError(`Action \`${actionName}\` returned an invalid object structure.`, {
+      code: "KQ_ACTION_INVALID_RETURN",
+      file: path.relative(options.root, match.item.actionsModule),
+      hint: "Action must return a Response or a fail() helper result."
+    })
+  }
 
   if (isFailResult(result)) {
     return renderPage(req, url, match, options, session, auth, flash, result.data, result.status)
@@ -222,20 +353,33 @@ async function renderPage(
   let data: Record<string, unknown> = {}
 
   if (match.item.pageModule) {
-    const module = await importFresh(match.item.pageModule)
+    let module
+    try {
+      module = await importFresh(match.item.pageModule)
+    } catch (err: any) {
+      err.phase = "page-loader"
+      throw err
+    }
+
     const handler = module.default
 
     if (typeof handler === "function") {
-      const result = await handler({
-        req,
-        url,
-        params: match.params,
-        query: url.searchParams,
-        session,
-        auth,
-        flash,
-        user: null
-      })
+      let result
+      try {
+        result = await handler({
+          req,
+          url,
+          params: match.params,
+          query: url.searchParams,
+          session,
+          auth,
+          flash,
+          user: null
+        })
+      } catch (err: any) {
+        err.phase = "page-loader"
+        throw err
+      }
 
       if (result instanceof Response) {
         return result
@@ -247,13 +391,28 @@ async function renderPage(
     }
   }
 
-  const html = renderPageView({
-    pageHtmlPath: match.item.pageHtml ?? "",
-    appRoot: resolvePath(options.root, options.config.app.root),
-    routesDir: resolvePath(options.root, options.config.app.routesDir),
-    routeDir: match.item.routeDir,
-    data: { ...data, ...extraData, flash: flash.consume() }
-  })
+  let html = ""
+  try {
+    html = renderPageView({
+      pageHtmlPath: match.item.pageHtml ?? "",
+      appRoot: resolvePath(options.root, options.config.app.root),
+      routesDir: resolvePath(options.root, options.config.app.routesDir),
+      routeDir: match.item.routeDir,
+      data: { ...data, ...extraData, flash: flash.consume() }
+    })
+  } catch (err: any) {
+    let layouts
+    try {
+      layouts = collectLayouts(
+        resolvePath(options.root, options.config.app.root),
+        resolvePath(options.root, options.config.app.routesDir),
+        match.item.routeDir
+      )
+    } catch {}
+    
+    err.phase = layouts ? "page-render" : "layout"
+    throw err
+  }
 
   return htmlResponse(html, { status })
 }
@@ -264,4 +423,499 @@ async function importFresh(filePath: string): Promise<Record<string, unknown>> {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
+}
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;")
+}
+
+export function findClosestNotFound(appRoot: string, routesDir: string, routeDir?: string): string | null {
+  if (routeDir) {
+    let current = routeDir
+    while (current.startsWith(routesDir)) {
+      const nfPath = path.join(current, "not-found.html")
+      if (existsSync(nfPath)) {
+        return nfPath
+      }
+      const parent = path.dirname(current)
+      if (parent === current) break
+      current = parent
+    }
+  }
+  const globalNf = path.join(appRoot, "not-found.html")
+  if (existsSync(globalNf)) {
+    return globalNf
+  }
+  return null
+}
+
+export function findClosestErrorPage(appRoot: string, routesDir: string, routeDir?: string): string | null {
+  if (routeDir) {
+    let current = routeDir
+    while (current.startsWith(routesDir)) {
+      const errPath = path.join(current, "error.html")
+      if (existsSync(errPath)) {
+        return errPath
+      }
+      const parent = path.dirname(current)
+      if (parent === current) break
+      current = parent
+    }
+  }
+  const globalErr = path.join(appRoot, "error.html")
+  if (existsSync(globalErr)) {
+    return globalErr
+  }
+  return null
+}
+
+function findRouteCandidates(manifest: RouteManifest, pathname: string): string[] {
+  const candidates: string[] = []
+  for (const item of manifest) {
+    if (item.kind === "page" && item.routePath) {
+      candidates.push(item.routePath)
+    }
+  }
+  return candidates.filter(c => {
+    const cSegs = c.split("/").filter(Boolean)
+    const pSegs = pathname.split("/").filter(Boolean)
+    const intersection = cSegs.filter(s => pSegs.includes(s))
+    return intersection.length > 0 || Math.abs(cSegs.length - pSegs.length) <= 1
+  }).slice(0, 5)
+}
+
+function renderDefaultNotFoundHtml(pathname: string, method: string, manifest: RouteManifest, dev: boolean): string {
+  const candidates = dev ? findRouteCandidates(manifest, pathname) : []
+  const candidatesList = candidates.map(c => `<li><a href="${c}">${c}</a></li>`).join("")
+  const candidatesHtml = candidates.length > 0 
+    ? `<div class="candidates">
+        <h3>Route candidates:</h3>
+        <ul>${candidatesList}</ul>
+       </div>`
+    : ""
+
+  const devInfo = dev 
+    ? `<div class="dev-info">
+        <p><strong>Method:</strong> ${method}</p>
+        <p><strong>Path:</strong> ${pathname}</p>
+        ${candidatesHtml}
+        <p class="hint">Check your <code>app/routes/</code> directory to ensure the route exists.</p>
+       </div>`
+    : `<p>The page you are looking for does not exist.</p>`
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>404 - Not Found</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #0f172a;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    }
+    h1 {
+      color: #f43f5e;
+      margin-top: 0;
+      font-size: 2rem;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 15px;
+    }
+    h3 {
+      color: #94a3b8;
+      margin-top: 20px;
+    }
+    p {
+      color: #cbd5e1;
+      line-height: 1.6;
+    }
+    code {
+      background: #0f172a;
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.9em;
+      color: #38bdf8;
+    }
+    .dev-info {
+      margin-top: 25px;
+      background: #0f172a;
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid #1e293b;
+    }
+    .hint {
+      color: #e2e8f0;
+      margin-top: 15px;
+      font-style: italic;
+    }
+    ul {
+      padding-left: 20px;
+    }
+    li {
+      margin-bottom: 8px;
+    }
+    a {
+      color: #38bdf8;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>404 - Not Found</h1>
+    ${devInfo}
+  </div>
+</body>
+</html>
+  `
+}
+
+export function handleNotFoundResponse(
+  req: Request,
+  url: URL,
+  manifest: RouteManifest,
+  options: BoronixAppOptions,
+  routeDir?: string
+): Response {
+  if (url.pathname.startsWith("/api/")) {
+    return json({ error: "Not Found", message: `API route ${url.pathname} not found` }, { status: 404 })
+  }
+
+  const appRoot = resolvePath(options.root, options.config.app.root)
+  const routesDir = resolvePath(options.root, options.config.app.routesDir)
+
+  const closestNf = findClosestNotFound(appRoot, routesDir, routeDir)
+  if (closestNf) {
+    try {
+      const content = readFileSync(closestNf, "utf8")
+      const rendered = renderTemplate(content, { route: url.pathname, method: req.method })
+      return htmlResponse(rendered, { status: 404 })
+    } catch {}
+  }
+
+  const html = renderDefaultNotFoundHtml(url.pathname, req.method, manifest, !!options.dev)
+  return htmlResponse(html, { status: 404 })
+}
+
+function renderDefaultProductionErrorHtml(message: string, status: number): string {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Error</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #0f172a;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      text-align: center;
+    }
+    h1 {
+      color: #f43f5e;
+      margin-top: 0;
+      font-size: 2rem;
+    }
+    p {
+      color: #cbd5e1;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Something went wrong</h1>
+    <p>An internal server error occurred.</p>
+  </div>
+</body>
+</html>
+  `
+}
+
+export function renderDevErrorPage(diagnostic: BoronixDiagnostic): string {
+  const hintsList = (diagnostic.hints ?? []).map(h => `<li>${escapeHtml(h)}</li>`).join("")
+  const hintsHtml = (diagnostic.hints && diagnostic.hints.length > 0)
+    ? `<div class="hints">
+        <h3>Suggestions / Hints</h3>
+        <ul>${hintsList}</ul>
+       </div>`
+    : ""
+
+  const codeFrameHtml = diagnostic.codeFrame
+    ? `<div class="code-frame">
+        <div class="code-frame-title">${escapeHtml(diagnostic.file ?? "")}</div>
+        <pre><code>${escapeHtml(diagnostic.codeFrame)}</code></pre>
+       </div>`
+    : ""
+
+  const matchedPatternHtml = diagnostic.pattern
+    ? `<div class="meta-item"><span class="meta-label">Pattern:</span> <code class="meta-val">${escapeHtml(diagnostic.pattern)}</code></div>`
+    : ""
+
+  const sourceFileHtml = diagnostic.file
+    ? `<div class="meta-item"><span class="meta-label">Source File:</span> <code class="meta-val">${escapeHtml(diagnostic.file)}</code></div>`
+    : ""
+
+  const actionHtml = diagnostic.action
+    ? `<div class="meta-item"><span class="meta-label">Action:</span> <code class="meta-val">${escapeHtml(diagnostic.action)}</code></div>`
+    : ""
+
+  const stackHtml = diagnostic.stack
+    ? `<div class="stack-trace">
+        <h3>Stack Trace</h3>
+        <pre><code>${escapeHtml(diagnostic.stack)}</code></pre>
+       </div>`
+    : ""
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Boronix Error</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #0f172a;
+      color: #f1f5f9;
+      margin: 0;
+      padding: 40px;
+      box-sizing: border-box;
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .header {
+      border-bottom: 2px solid #f43f5e;
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+    .brand {
+      color: #f43f5e;
+      font-weight: 700;
+      font-size: 1.1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 2.2rem;
+      color: #fff;
+      font-weight: 800;
+      word-break: break-word;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 15px;
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      border: 1px solid #334155;
+    }
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .meta-label {
+      color: #94a3b8;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+    .meta-val {
+      color: #e2e8f0;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+    code.meta-val {
+      background: #0f172a;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.85em;
+      color: #38bdf8;
+      align-self: flex-start;
+      word-break: break-all;
+    }
+    .code-frame {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      overflow: hidden;
+    }
+    .code-frame-title {
+      background: #1e293b;
+      padding: 10px 20px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.85rem;
+      border-bottom: 1px solid #334155;
+      color: #cbd5e1;
+    }
+    pre {
+      margin: 0;
+      padding: 20px;
+      overflow-x: auto;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.9rem;
+    }
+    .code-frame code {
+      color: #e2e8f0;
+    }
+    .code-frame pre {
+      background: #0f172a;
+    }
+    .hints {
+      background: #172554;
+      border: 1px solid #1e3a8a;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+    }
+    .hints h3 {
+      margin-top: 0;
+      color: #60a5fa;
+      font-size: 1.1rem;
+    }
+    .hints ul {
+      margin: 0;
+      padding-left: 20px;
+      color: #93c5fd;
+    }
+    .hints li {
+      margin-bottom: 8px;
+    }
+    .stack-trace {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .stack-trace h3 {
+      margin-top: 0;
+      color: #cbd5e1;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 10px;
+    }
+    .stack-trace code {
+      color: #f1f5f9;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="brand">Boronix Dev Error</div>
+      <h1>${escapeHtml(diagnostic.message)}</h1>
+    </div>
+
+    <div class="meta-grid">
+      <div class="meta-item"><span class="meta-label">Route:</span> <code class="meta-val">${escapeHtml(diagnostic.route ?? "")}</code></div>
+      ${matchedPatternHtml}
+      <div class="meta-item"><span class="meta-label">Phase:</span> <code class="meta-val">${escapeHtml(diagnostic.phase)}</code></div>
+      ${sourceFileHtml}
+      ${actionHtml}
+    </div>
+
+    ${hintsHtml}
+    ${codeFrameHtml}
+    ${stackHtml}
+  </div>
+</body>
+</html>
+  `
+}
+
+export function handleDevOrErrorPageResponse(
+  error: unknown,
+  phase: BoronixErrorPhase,
+  req: Request,
+  url: URL,
+  manifest: RouteManifest,
+  options: BoronixAppOptions,
+  item?: RouteManifestItem
+): Response {
+  const root = options.root
+  const diagnostic = diagnoseError(error, root, phase)
+  diagnostic.route = url.pathname + url.search
+  diagnostic.pattern = item?.routePath
+  diagnostic.method = req.method
+  diagnostic.status = 500
+
+  if (options.dev) {
+    const html = renderDevErrorPage(diagnostic)
+    return htmlResponse(html, { status: 500 })
+  }
+
+  const appRoot = resolvePath(options.root, options.config.app.root)
+  const routesDir = resolvePath(options.root, options.config.app.routesDir)
+  const routeDir = item?.routeDir
+
+  const closestErrorPage = findClosestErrorPage(appRoot, routesDir, routeDir)
+  if (closestErrorPage) {
+    try {
+      const content = readFileSync(closestErrorPage, "utf8")
+      const rendered = renderTemplate(content, {
+        message: diagnostic.message,
+        status: 500,
+        route: diagnostic.route,
+        phase: diagnostic.phase
+      })
+      return htmlResponse(rendered, { status: 500 })
+    } catch {}
+  }
+
+  const html = renderDefaultProductionErrorHtml(diagnostic.message, 500)
+  return htmlResponse(html, { status: 500 })
 }

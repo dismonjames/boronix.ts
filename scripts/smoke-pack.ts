@@ -6,8 +6,8 @@ import os from "node:os"
 console.log("Running smoke pack test...")
 
 const rootDir = path.resolve(".")
-const boronixTar = path.join(rootDir, "packages/boronix/boronix-0.2.7.tgz")
-const createTar = path.join(rootDir, "packages/create-boronix/create-boronix-0.2.7.tgz")
+const boronixTar = path.join(rootDir, "packages/boronix/boronix-0.3.0.tgz")
+const createTar = path.join(rootDir, "packages/create-boronix/create-boronix-0.3.0.tgz")
 
 // Clean old tarballs if exist
 if (existsSync(boronixTar)) rmSync(boronixTar)
@@ -60,6 +60,18 @@ try {
   console.log("Running bunx boronix doctor...")
   execSync("bunx boronix doctor", { cwd: appPath, stdio: "inherit" })
 
+  // Run typegen
+  console.log("Running bunx boronix typegen...")
+  execSync("bunx boronix typegen", { cwd: appPath, stdio: "inherit" })
+
+  // Verify .boronix/types/routes.d.ts exists
+  const typegenFile = path.join(appPath, ".boronix", "types", "routes.d.ts")
+  if (!existsSync(typegenFile)) {
+    console.error("✖ Typegen routes.d.ts file missing")
+    process.exit(1)
+  }
+  console.log("✔ Typegen routes.d.ts verified")
+
   // Run build
   console.log("Running bunx boronix build...")
   execSync("bunx boronix build", { cwd: appPath, stdio: "inherit" })
@@ -80,6 +92,16 @@ try {
     process.exit(1)
   }
   console.log("✔ Routes parsed successfully:", parsed.length, "routes found")
+
+  // Run inspect / --json
+  console.log("Running bunx boronix inspect / --json...")
+  const inspectJson = execSync("bunx boronix inspect / --json", { cwd: appPath }).toString()
+  const parsedInspect = JSON.parse(inspectJson)
+  if (!parsedInspect.success) {
+    console.error("✖ Inspect failed:", inspectJson)
+    process.exit(1)
+  }
+  console.log("✔ Inspect / parsed successfully:", parsedInspect.matched)
 
   console.log("✔ smoke-pack test completed successfully!")
 } finally {

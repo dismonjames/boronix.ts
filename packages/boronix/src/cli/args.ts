@@ -17,6 +17,7 @@ export type CliArgs = {
   json: boolean
   full: boolean
   flat: boolean
+  method?: string | undefined
   positionals: string[]
 }
 
@@ -38,6 +39,7 @@ export function parseCliArgs(argv: string[]): CliArgs {
   let json = false
   let full = false
   let flat = false
+  let method: string | undefined = undefined
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i]
@@ -62,6 +64,12 @@ export function parseCliArgs(argv: string[]): CliArgs {
       full = true
     } else if (arg === "--flat") {
       flat = true
+    } else if (arg === "--method") {
+      const val = args[i + 1]
+      if (val && !val.startsWith("-")) {
+        method = val
+        i++
+      }
     } else if (arg === "--root") {
       const val = args[i + 1]
       if (val && !val.startsWith("-")) {
@@ -119,6 +127,7 @@ export function parseCliArgs(argv: string[]): CliArgs {
     json,
     full,
     flat,
+    method,
     positionals
   }
 }

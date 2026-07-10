@@ -1,6 +1,6 @@
 # Boronix Typegen
 
-The `typegen` command scans your routes capsules and automatically generates TypeScript types for your pages, API endpoints, and action form paths.
+The `typegen` command scans your routes capsules and automatically generates TypeScript types for routes and parameters under `.boronix/types/routes.d.ts`.
 
 ## Usage
 
@@ -12,6 +12,9 @@ boronix typegen [options]
 
 Generates `.boronix/types/routes.d.ts` containing:
 
+- `BoronixRoute`: Union of all route patterns (e.g. `/`, `/login`, `/exercises/[id]`).
+- `BoronixRouteParams`: Map of route patterns to their required dynamic parameters.
+- `RouteParams<T>`: Helper mapping type.
 - `PageRoute`: A union of all static and template literal dynamic page routes.
 - `ApiRoute`: A union of all `/api` endpoint routes.
 - `ActionRoute`: A union of all named action routes.
@@ -19,17 +22,32 @@ Generates `.boronix/types/routes.d.ts` containing:
 ### Example Output
 
 ```ts
-export type PageRoute =
+export type BoronixRoute =
   | "/"
   | "/login"
-  | `/exercises/${string}`
+  | "/exercises"
+  | "/exercises/[id]"
 
-export type ApiRoute =
-  | "/api/exercises"
+export type BoronixRouteParams = {
+  "/": {}
+  "/login": {}
+  "/exercises": {}
+  "/exercises/[id]": {
+    id: string
+  }
+}
 
-export type ActionRoute =
-  | "/login?/login"
-  | `/exercises/${string}?/submit`
+export type RouteParams<T extends BoronixRoute> = BoronixRouteParams[T]
 ```
 
-Using these types allows compile-time validation of redirects, links, and forms.
+## TSConfig Integration
+To make the generated types available globally, add `.boronix/types/routes.d.ts` (or the entire `.boronix` folder) to your `tsconfig.json` `include` array:
+
+```json
+{
+  "include": [
+    "app/**/*",
+    ".boronix/types/**/*.d.ts"
+  ]
+}
+```

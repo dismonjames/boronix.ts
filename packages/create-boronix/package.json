@@ -1,6 +1,6 @@
 {
   "name": "create-boronix",
-  "version": "0.2.7",
+  "version": "0.3.0",
   "description": "Create a new Boronix app.",
   "type": "module",
   "license": "MPL-2.0",

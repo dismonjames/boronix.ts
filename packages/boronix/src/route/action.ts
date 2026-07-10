@@ -20,6 +20,7 @@ export type ActionContext = BaseContext & {
 export type ActionHandler = (context: ActionContext) => Response | FailResult | Promise<Response | FailResult>
 
 export function action(handler: ActionHandler): ActionHandler {
+  Object.defineProperty(handler, "_isBoronixAction", { value: true, enumerable: false })
   return handler
 }
 

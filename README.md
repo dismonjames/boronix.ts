@@ -18,6 +18,8 @@ npm i boronix
 Or scaffold a new app:
 
 ```bash
+npm create boronix@latest my-app
+# or:
 npx create-boronix my-app
 cd my-app
 npm install
@@ -41,7 +43,8 @@ bun run dev
     "dev": "boronix dev",
     "build": "boronix build",
     "start": "boronix start",
-    "doctor": "boronix doctor"
+    "doctor": "boronix doctor",
+    "typegen": "boronix typegen"
   }
 }
 ```

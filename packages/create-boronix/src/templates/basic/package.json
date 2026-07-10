@@ -5,10 +5,12 @@
   "scripts": {
     "dev": "boronix dev",
     "build": "boronix build",
-    "start": "boronix start"
+    "start": "boronix start",
+    "doctor": "boronix doctor",
+    "typegen": "boronix typegen"
   },
   "dependencies": {
-    "boronix": "^0.2.7"
+    "boronix": "^0.3.0"
   },
-  "version": "0.2.7"
+  "version": "0.3.0"
 }

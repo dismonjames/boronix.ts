@@ -12,6 +12,7 @@ import { colors } from "../ui/colors"
 import { symbols } from "../ui/symbols"
 import { startSpinner, updateSpinner, stopSpinner } from "../ui/spinner"
 import { formatRoutesSummary, getActionNames, getApiMethods, type CliRouteEntry } from "../ui/table"
+import { typegenCommand } from "./typegen"
 
 export async function devCommand(
   root: string,
@@ -27,6 +28,11 @@ export async function devCommand(
   } = {}
 ): Promise<void> {
   initUiSettings({ plain: options.plain, noColor: options.noColor })
+
+  // Run typegen first
+  try {
+    await typegenCommand(root, { plain: options.plain, noColor: options.noColor })
+  } catch {}
 
   const startTime = performance.now()
   startSpinner("loading config")

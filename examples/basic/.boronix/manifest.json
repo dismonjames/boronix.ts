@@ -5,34 +5,34 @@
       "kind": "page",
       "routePath": "/exercises",
       "params": [],
-      "routeDir": "/home/minh/Documents/kumquat.ts/examples/basic/app/routes/exercises",
-      "pageHtml": "/home/minh/Documents/kumquat.ts/examples/basic/app/routes/exercises/page.html",
-      "pageModule": "/home/minh/Documents/kumquat.ts/examples/basic/app/routes/exercises/page.ts"
+      "routeDir": "/home/minh/Documents/boronix.ts/examples/basic/app/routes/exercises",
+      "pageHtml": "/home/minh/Documents/boronix.ts/examples/basic/app/routes/exercises/page.html",
+      "pageModule": "/home/minh/Documents/boronix.ts/examples/basic/app/routes/exercises/page.ts"
     },
     {
       "kind": "api",
       "routePath": "/exercises",
       "apiPath": "/api/exercises",
       "params": [],
-      "routeDir": "/home/minh/Documents/kumquat.ts/examples/basic/app/routes/exercises",
-      "apiModule": "/home/minh/Documents/kumquat.ts/examples/basic/app/routes/exercises/api.ts"
+      "routeDir": "/home/minh/Documents/boronix.ts/examples/basic/app/routes/exercises",
+      "apiModule": "/home/minh/Documents/boronix.ts/examples/basic/app/routes/exercises/api.ts"
     },
     {
       "kind": "page",
       "routePath": "/login",
       "params": [],
-      "routeDir": "/home/minh/Documents/kumquat.ts/examples/basic/app/routes/login",
-      "pageHtml": "/home/minh/Documents/kumquat.ts/examples/basic/app/routes/login/page.html",
-      "pageModule": "/home/minh/Documents/kumquat.ts/examples/basic/app/routes/login/page.ts",
-      "actionsModule": "/home/minh/Documents/kumquat.ts/examples/basic/app/routes/login/actions.ts"
+      "routeDir": "/home/minh/Documents/boronix.ts/examples/basic/app/routes/login",
+      "pageHtml": "/home/minh/Documents/boronix.ts/examples/basic/app/routes/login/page.html",
+      "pageModule": "/home/minh/Documents/boronix.ts/examples/basic/app/routes/login/page.ts",
+      "actionsModule": "/home/minh/Documents/boronix.ts/examples/basic/app/routes/login/actions.ts"
     },
     {
       "kind": "page",
       "routePath": "/",
       "params": [],
-      "routeDir": "/home/minh/Documents/kumquat.ts/examples/basic/app/routes/home",
-      "pageHtml": "/home/minh/Documents/kumquat.ts/examples/basic/app/routes/home/page.html",
-      "pageModule": "/home/minh/Documents/kumquat.ts/examples/basic/app/routes/home/page.ts"
+      "routeDir": "/home/minh/Documents/boronix.ts/examples/basic/app/routes/home",
+      "pageHtml": "/home/minh/Documents/boronix.ts/examples/basic/app/routes/home/page.html",
+      "pageModule": "/home/minh/Documents/boronix.ts/examples/basic/app/routes/home/page.ts"
     },
     {
       "kind": "page",
@@ -40,10 +40,10 @@
       "params": [
         "id"
       ],
-      "routeDir": "/home/minh/Documents/kumquat.ts/examples/basic/app/routes/exercises/[id]",
-      "pageHtml": "/home/minh/Documents/kumquat.ts/examples/basic/app/routes/exercises/[id]/page.html",
-      "pageModule": "/home/minh/Documents/kumquat.ts/examples/basic/app/routes/exercises/[id]/page.ts",
-      "actionsModule": "/home/minh/Documents/kumquat.ts/examples/basic/app/routes/exercises/[id]/actions.ts"
+      "routeDir": "/home/minh/Documents/boronix.ts/examples/basic/app/routes/exercises/[id]",
+      "pageHtml": "/home/minh/Documents/boronix.ts/examples/basic/app/routes/exercises/[id]/page.html",
+      "pageModule": "/home/minh/Documents/boronix.ts/examples/basic/app/routes/exercises/[id]/page.ts",
+      "actionsModule": "/home/minh/Documents/boronix.ts/examples/basic/app/routes/exercises/[id]/actions.ts"
     }
   ]
 }

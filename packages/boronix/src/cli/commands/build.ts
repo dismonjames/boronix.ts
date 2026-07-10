@@ -12,6 +12,8 @@ import { colors } from "../ui/colors"
 import { symbols } from "../ui/symbols"
 import { getActionNames, getApiMethods } from "../ui/table"
 
+import { typegenCommand } from "./typegen"
+
 type BuildRouteEntry = {
   symbol: "page" | "api" | "action"
   path: string
@@ -30,6 +32,11 @@ export async function buildCommand(
   } = {}
 ): Promise<void> {
   initUiSettings({ plain: options.plain, noColor: options.noColor })
+
+  // Run typegen first
+  try {
+    await typegenCommand(root, { plain: options.plain, noColor: options.noColor })
+  } catch {}
 
   const startTime = performance.now()
   const config = await loadConfig(root)
