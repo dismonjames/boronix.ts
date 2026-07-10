@@ -10,11 +10,16 @@ afterAll(() => {
 test("dev missing secret warning is printed exactly once", async () => {
   setBoronixMode("development")
 
+  // Reset the global warning flag so this test is isolated from other tests
+  // that may have already triggered the warning in the same process
+  const globalSymbol = Symbol.for("boronix-warned-session-secret")
+  delete (globalThis as any)[globalSymbol]
+
   // Spy on console.warn
   let warningsCount = 0
   const originalWarn = console.warn
-  console.warn = (msg) => {
-    if (msg && msg.includes("session.secret is missing")) {
+  console.warn = (msg: any) => {
+    if (typeof msg === "string" && msg.includes("session.secret is missing")) {
       warningsCount++
     }
   }
