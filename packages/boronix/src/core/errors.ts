@@ -289,9 +289,13 @@ export function renderDevErrorPage(diagnostic: BoronixDiagnostic): string {
     ? `<div class="section-title">Source</div>
        <div class="source-box">
          <div class="source-header">
-           <span class="source-path">${escapeHtml(diagnostic.file ?? "source_code")}</span>
+           <span class="source-title">
+             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="m10 13-2 2 2 2"></path><path d="m14 17 2-2-2-2"></path></svg>
+             <span class="source-path">${escapeHtml(diagnostic.file ?? "source_code")}</span>
+           </span>
            <span class="source-link">
-             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+             <span>open</span>
+             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg>
            </span>
          </div>
          <pre><code>${formattedCodeFrame}</code></pre>
@@ -302,30 +306,34 @@ export function renderDevErrorPage(diagnostic: BoronixDiagnostic): string {
   if (diagnostic.route) {
     diagCards.push(`
       <div class="diagnostic-card">
-        <span class="diag-label">Route Path</span>
-        <span class="diag-val">${escapeHtml(diagnostic.route)}</span>
+        <span class="diag-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.8 1.8"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.8-1.8"></path></svg></span>
+        <span class="diag-body"><span class="diag-label">Route Path</span>
+        <span class="diag-val">${escapeHtml(diagnostic.route)}</span></span>
       </div>
     `)
   }
   if (diagnostic.pattern) {
     diagCards.push(`
       <div class="diagnostic-card">
-        <span class="diag-label">Route Pattern</span>
-        <span class="diag-val">${escapeHtml(diagnostic.pattern)}</span>
+        <span class="diag-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"></path><path d="M7 16c2.5-6 6.5-9 11-9"></path><path d="M15 7h3v3"></path></svg></span>
+        <span class="diag-body"><span class="diag-label">Route Pattern</span>
+        <span class="diag-val">${escapeHtml(diagnostic.pattern)}</span></span>
       </div>
     `)
   }
   diagCards.push(`
     <div class="diagnostic-card">
-      <span class="diag-label">Execution Phase</span>
-      <span class="diag-val badge">${escapeHtml(diagnostic.phase)}</span>
+      <span class="diag-icon danger"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg></span>
+      <span class="diag-body"><span class="diag-label">Execution Phase</span>
+      <span class="diag-val badge">${escapeHtml(diagnostic.phase)}</span></span>
     </div>
   `)
   if (diagnostic.action) {
     diagCards.push(`
       <div class="diagnostic-card">
-        <span class="diag-label">Mapped Action</span>
-        <span class="diag-val">${escapeHtml(diagnostic.action)}</span>
+        <span class="diag-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m13 2-2 9h8l-9 11 2-9H4z"></path></svg></span>
+        <span class="diag-body"><span class="diag-label">Mapped Action</span>
+        <span class="diag-val">${escapeHtml(diagnostic.action)}</span></span>
       </div>
     `)
   }
@@ -371,13 +379,29 @@ export function renderDevErrorPage(diagnostic: BoronixDiagnostic): string {
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
+    :root {
+      color-scheme: dark;
+      --bg: #09090b;
+      --panel: #121216;
+      --panel-soft: #17171c;
+      --panel-deep: #070708;
+      --line: rgba(255, 255, 255, 0.08);
+      --line-strong: rgba(255, 255, 255, 0.13);
+      --text: #f4f4f5;
+      --muted: #8f8f99;
+      --faint: #5f6069;
+      --danger: #ff4d5d;
+      --danger-soft: rgba(255, 77, 93, 0.1);
+      --cyan: #67e8f9;
+    }
+
     body {
       font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: #030303;
+      background-color: var(--bg);
       background-image: 
-        radial-gradient(circle at 50% 30%, rgba(239, 68, 68, 0.08), transparent 60%),
-        radial-gradient(circle at 10% 80%, rgba(56, 189, 248, 0.05), transparent 50%);
-      color: #e4e4e7;
+        linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 260px),
+        radial-gradient(circle at 50% 0%, rgba(255, 77, 93, 0.08), transparent 420px);
+      color: var(--text);
       margin: 0;
       padding: 40px 20px;
       min-height: 100vh;
@@ -387,21 +411,29 @@ export function renderDevErrorPage(diagnostic: BoronixDiagnostic): string {
       justify-content: center;
     }
     .error-modal {
+      position: relative;
       width: 100%;
-      max-width: 900px;
-      background: #0c0c0e;
-      border: 1px solid #1e1e24;
-      border-top: 3px solid #ef4444;
-      border-radius: 12px;
-      box-shadow: 0 40px 80px rgba(0, 0, 0, 0.8), 0 0 1px rgba(255, 255, 255, 0.1) inset;
-      padding: 30px;
+      max-width: 960px;
+      background: #111115;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: 0 32px 90px rgba(0, 0, 0, 0.58), 0 0 0 1px rgba(255, 255, 255, 0.025) inset;
+      padding: 24px;
       box-sizing: border-box;
+      overflow: hidden;
+    }
+    .error-modal::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 3px;
+      background: linear-gradient(90deg, #ff4053, #ff7361 42%, #67e8f9);
     }
     .modal-nav {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 22px;
     }
     .nav-left {
       display: flex;
@@ -418,24 +450,24 @@ export function renderDevErrorPage(diagnostic: BoronixDiagnostic): string {
       justify-content: center;
       width: 24px;
       height: 24px;
-      border-radius: 5px;
-      background: #141416;
-      border: 1px solid #222227;
-      color: #44444f;
+      border-radius: 6px;
+      background: var(--panel-soft);
+      border: 1px solid var(--line);
+      color: var(--faint);
       cursor: pointer;
     }
     .arrow-btn.active {
-      color: #88888f;
+      color: var(--muted);
     }
     .error-count {
       font-size: 0.8rem;
-      color: #6e6e77;
+      color: var(--muted);
       font-weight: 500;
     }
     .close-btn {
       background: none;
       border: none;
-      color: #71717a;
+      color: var(--muted);
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -444,61 +476,112 @@ export function renderDevErrorPage(diagnostic: BoronixDiagnostic): string {
       transition: color 0.15s ease;
     }
     .close-btn:hover {
-      color: #ffffff;
+      color: var(--text);
+    }
+    .headline {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    .headline-icon {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      color: var(--danger);
+      background: var(--danger-soft);
+      border: 1px solid rgba(255, 77, 93, 0.2);
+      flex: 0 0 auto;
+    }
+    .eyebrow {
+      margin: 1px 0 4px;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
     }
     .error-title {
       font-size: 1.25rem;
       font-weight: 700;
-      color: #ffffff;
-      margin: 0 0 14px 0;
+      color: var(--text);
+      margin: 0;
       letter-spacing: -0.01em;
     }
     .error-banner {
-      background: rgba(239, 68, 68, 0.08);
-      border-left: 3px solid #ef4444;
-      padding: 14px 18px;
-      border-radius: 6px;
-      color: #fca5a5;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: linear-gradient(90deg, rgba(255, 77, 93, 0.12), rgba(255, 77, 93, 0.045));
+      border: 1px solid rgba(255, 77, 93, 0.16);
+      border-left: 3px solid var(--danger);
+      padding: 13px 16px;
+      border-radius: 7px;
+      color: #ffb4bd;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.9rem;
+      font-size: 0.86rem;
       font-weight: 500;
       line-height: 1.5;
       margin-bottom: 24px;
       word-break: break-word;
     }
+    .error-banner svg {
+      color: var(--danger);
+      margin-top: 2px;
+      flex: 0 0 auto;
+    }
     .section-title {
       font-size: 0.95rem;
       font-weight: 600;
-      color: #ffffff;
+      color: var(--text);
       margin: 24px 0 10px 0;
     }
     .source-box {
-      border: 1px solid #1e1e24;
+      border: 1px solid var(--line);
       border-radius: 8px;
       overflow: hidden;
-      background: #050507;
+      background: var(--panel-deep);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset;
     }
     .source-header {
-      background: #0e0e11;
-      padding: 8px 16px;
-      border-bottom: 1px solid #1e1e24;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--line);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 12px;
+    }
+    .source-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      color: var(--muted);
     }
     .source-path {
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.8rem;
-      color: #a1a1aa;
+      color: #c7c7d1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .source-link {
-      color: #71717a;
-      display: flex;
+      color: var(--muted);
+      display: inline-flex;
       align-items: center;
+      gap: 6px;
       cursor: pointer;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
     }
     .source-link:hover {
-      color: #fff;
+      color: var(--text);
     }
     pre {
       margin: 0;
@@ -507,25 +590,25 @@ export function renderDevErrorPage(diagnostic: BoronixDiagnostic): string {
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.85rem;
       line-height: 1.6;
-      color: #e4e4e7;
+      color: #e8e8ee;
     }
     .line-number {
-      color: #52525b;
+      color: var(--faint);
     }
     .active-line-num {
-      color: #ef4444;
+      color: var(--danger);
       font-weight: 600;
     }
     .caret-indicator {
-      color: #ef4444;
+      color: var(--danger);
       font-weight: 600;
     }
     .caret-pointer {
-      color: #ef4444;
+      color: var(--danger);
       font-weight: 700;
     }
     .keyword {
-      color: #38bdf8;
+      color: var(--cyan);
     }
     .string {
       color: #34d399;
@@ -537,13 +620,35 @@ export function renderDevErrorPage(diagnostic: BoronixDiagnostic): string {
       margin-bottom: 8px;
     }
     .diagnostic-card {
-      background: #0e0e11;
-      border: 1px solid #1e1e24;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: var(--panel-soft);
+      border: 1px solid var(--line);
       border-radius: 8px;
       padding: 10px 14px;
     }
+    .diag-icon {
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      color: var(--cyan);
+      background: rgba(103, 232, 249, 0.075);
+      border: 1px solid rgba(103, 232, 249, 0.12);
+      flex: 0 0 auto;
+    }
+    .diag-icon.danger {
+      color: var(--danger);
+      background: var(--danger-soft);
+      border-color: rgba(255, 77, 93, 0.16);
+    }
+    .diag-body {
+      min-width: 0;
+    }
     .diag-label {
-      color: #71717a;
+      color: var(--muted);
       font-size: 0.65rem;
       text-transform: uppercase;
       font-weight: 600;
@@ -554,20 +659,20 @@ export function renderDevErrorPage(diagnostic: BoronixDiagnostic): string {
     .diag-val {
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.8rem;
-      color: #e4e4e7;
+      color: #e8e8ee;
       word-break: break-all;
     }
     .diag-val.badge {
-      color: #ef4444;
-      background: rgba(239, 68, 68, 0.08);
-      border: 1px solid rgba(239, 68, 68, 0.15);
+      color: #ff9aa6;
+      background: var(--danger-soft);
+      border: 1px solid rgba(255, 77, 93, 0.16);
       padding: 1px 5px;
       border-radius: 4px;
       font-size: 0.75rem;
     }
     .stack-box {
-      background: #050507;
-      border: 1px solid #1e1e24;
+      background: var(--panel-deep);
+      border: 1px solid var(--line);
       border-radius: 8px;
       padding: 14px 18px;
       max-height: 200px;
@@ -578,17 +683,17 @@ export function renderDevErrorPage(diagnostic: BoronixDiagnostic): string {
       padding: 0;
       font-size: 0.8rem;
       line-height: 1.7;
-      color: #71717a;
+      color: var(--muted);
     }
     .user-file {
-      color: #ef4444;
+      color: var(--danger);
       font-weight: 500;
       text-decoration: underline;
       text-underline-offset: 3px;
     }
     .hints-section {
-      background: #0e0e11;
-      border: 1px solid #1e1e24;
+      background: var(--panel-soft);
+      border: 1px solid var(--line);
       border-radius: 8px;
       padding: 14px 18px;
       margin-top: 20px;
@@ -597,7 +702,7 @@ export function renderDevErrorPage(diagnostic: BoronixDiagnostic): string {
       display: flex;
       align-items: center;
       gap: 8px;
-      color: #38bdf8;
+      color: var(--cyan);
       margin-bottom: 10px;
     }
     .hints-header h3 {
@@ -608,11 +713,34 @@ export function renderDevErrorPage(diagnostic: BoronixDiagnostic): string {
     .hints-section ul {
       margin: 0;
       padding-left: 20px;
-      color: #a1a1aa;
+      color: #b7b7c2;
       font-size: 0.85rem;
     }
     .hints-section li {
       margin-bottom: 6px;
+    }
+    @media (max-width: 640px) {
+      body {
+        padding: 18px 10px;
+        align-items: flex-start;
+      }
+      .error-modal {
+        padding: 18px;
+      }
+      .headline {
+        gap: 10px;
+      }
+      .headline-icon {
+        width: 34px;
+        height: 34px;
+      }
+      pre {
+        padding: 12px;
+        font-size: 0.78rem;
+      }
+      .source-link span {
+        display: none;
+      }
     }
   </style>
 </head>
@@ -635,9 +763,18 @@ export function renderDevErrorPage(diagnostic: BoronixDiagnostic): string {
       </button>
     </div>
 
-    <h2 class="error-title">Unhandled Runtime Error</h2>
+    <div class="headline">
+      <div class="headline-icon">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.7 3.86a2 2 0 0 0-3.4 0Z"></path></svg>
+      </div>
+      <div>
+        <p class="eyebrow">Boronix Dev Overlay</p>
+        <h2 class="error-title">Unhandled Runtime Error</h2>
+      </div>
+    </div>
     <div class="error-banner">
-      ${escapeHtml(diagnostic.message)}
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v5"></path><path d="M12 16h.01"></path></svg>
+      <span>${escapeHtml(diagnostic.message)}</span>
     </div>
 
     ${codeFrameHtml}
